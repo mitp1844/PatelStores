@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Patel Stores — Kigali, Rwanda</title>
+
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#E8A317">
+    <meta name="description" content="Shop fresh groceries, household essentials & more from Patel Stores across Kigali. Order online, pay with MTN Mobile Money.">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- iOS PWA Meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Patel Stores">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="components.css">
+    <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Toast container -->
+        <div id="toast-container"></div>
+
+        <!-- OTP Modal -->
+        <div id="otp-modal" class="modal-overlay" style="display:none">
+            <div class="modal-card otp-card">
+                <div class="modal-close" onclick="closeOtpModal()">&times;</div>
+                <div class="otp-icon">🔐</div>
+                <h2>Verify Your Identity</h2>
+                <p class="otp-sub">Enter the 6-digit code sent to your email/phone</p>
+                <div class="otp-inputs" id="otp-inputs"></div>
+                <div class="otp-timer" id="otp-timer">Code expires in <span id="otp-countdown">5:00</span></div>
+                <button class="btn btn-primary btn-full" id="otp-verify-btn" onclick="verifyOtp()">Verify Code</button>
+                <button class="btn btn-ghost btn-full" onclick="resendOtp()">Resend Code</button>
+            </div>
+        </div>
+
+        <!-- Email Preview Modal -->
+        <div id="email-modal" class="modal-overlay" style="display:none">
+            <div class="modal-card email-card">
+                <div class="modal-close" onclick="document.getElementById('email-modal').style.display='none'">&times;</div>
+                <div class="email-preview" id="email-preview-content"></div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION -->
+        <nav id="main-nav" class="nav"></nav>
+
+        <!-- PAGE CONTAINER -->
+        <main id="page-container"></main>
+
+        <!-- FOOTER -->
+        <footer id="main-footer" class="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <div class="logo-mark">P</div>
+                    <div>
+                        <div class="footer-name">Patel Stores</div>
+                        <div class="footer-tagline">Serving Kigali since 2020</div>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Locations</h4>
+                        <p>Patel Supermarket — KN 82 St</p>
+                        <p>Patel Grocers — KN 14 Ave</p>
+                        <p>Patel Shop — Kicukiro</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Hours</h4>
+                        <p>Supermarket: 8AM – 8PM Daily</p>
+                        <p>Grocers & Shop: 8AM – 10PM Daily</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Contact</h4>
+                        <p>📱 Supermarket: +250 788 836 076</p>
+                        <p>📱 Grocers: +250 783 335 971</p>
+                        <p>📱 Shop: +250 791 500 812</p>
+                        <p style="margin-top:6px;color:#F5D06B">💬 Message us on WhatsApp!</p>
+                        <p>patelgrocersrwanda@gmail.com</p>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <span>&copy; 2026 Patel Stores Ltd. All rights reserved.</span>
+                    <a href="#" onclick="navigate('staff-login');return false">Staff Portal</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="data.js"></script>
+    <script src="store.js"></script>
+    <script src="router.js"></script>
+    <script src="components.js"></script>
+    <script src="pages-customer.js"></script>
+    <script src="pages-admin.js"></script>
+    <script src="pages-driver.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('[PWA] Service Worker registered, scope:', reg.scope))
+          .catch(err => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+    </script>
+</body>
+</html>
