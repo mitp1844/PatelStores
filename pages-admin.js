@@ -341,7 +341,7 @@ function renderAdminProducts() {
                         <div class="form-group"><label>Category</label><select class="form-input" id="new-prod-cat">${catOptions}</select></div>
                         <div class="form-group"><label>Emoji</label><input type="text" class="form-input" id="new-prod-emoji" placeholder="🛒" value="🛒"></div>
                     </div>
-                    <div class="form-group"><label>Barcode</label><input type="text" class="form-input" id="new-prod-barcode" placeholder="Scan or enter barcode (optional)"></div>
+                    <div class="form-group"><label>Barcode</label><div style="display:flex;gap:6px"><input type="text" class="form-input" id="new-prod-barcode" placeholder="Enter barcode (optional)" style="flex:1"><button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0" onclick="scanBarcodeForField('new-prod-barcode')">📷 Scan</button></div></div>
                     <div class="form-group">
                         <label>Stores</label>
                         <div style="display:flex;gap:var(--gap-sm);flex-wrap:wrap;margin-top:4px">${storeChecks}</div>
@@ -976,4 +976,37 @@ function quickUpdateStock(productId) {
         showToast(product.name + ' stock updated to ' + qty);
         renderAdminProducts();
     }).catch(err => showToast('Failed: ' + err.message, 'error'));
+}
+function scanBarcodeForField(fieldId) {
+    if (!window.Html5Qrcode) return showToast('Scanner not loaded', 'error');
+    const modalHtml = `<div id="barcode-field-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px">
+        <div style="background:white;border-radius:16px;padding:16px;width:100%;max-width:400px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-weight:700;font-size:0.95rem">📷 Scan Barcode</span>
+                <button onclick="closeBarcodeFieldModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer">✕</button>
+            </div>
+            <div id="barcode-field-reader" style="width:100%;border-radius:8px;overflow:hidden"></div>
+            <p style="text-align:center;font-size:0.78rem;color:#64748B;margin-top:8px">Point camera at the barcode</p>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const scanner = new Html5Qrcode("barcode-field-reader");
+    window._fieldScanner = scanner;
+    window._fieldScanTarget = fieldId;
+    scanner. start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 120 } },
+        (code) => {
+            document.getElementById(fieldId).value = code;
+            closeBarcodeFieldModal();
+            showToast('Barcode scanned: ' + code);
+        },
+        () => {}
+    ).catch(() => { closeBarcodeFieldModal(); showToast('Camera not available', 'error'); });
+}
+
+function closeBarcodeFieldModal() {
+    if (window._fieldScanner) { window._fieldScanner.stop().catch(() => {}); window._fieldScanner.clear().catch(() => {}); window._fieldScanner = null; }
+    const modal = document.getElementById('barcode-field-modal');
+    if (modal) modal.remove();
 }
