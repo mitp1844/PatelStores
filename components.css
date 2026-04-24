@@ -287,22 +287,7 @@ textarea.form-input { resize: vertical; min-height: 70px; }
 
 @media (max-width: 900px) {
     .admin-layout { grid-template-columns: 1fr; }
-    .admin-sidebar {
-        position: static; height: auto; padding: 6px 8px;
-        display: flex; overflow-x: auto; gap: 4px;
-        background: var(--coffee); flex-wrap: nowrap;
-    }
-    .sidebar-section { display: flex; gap: 4px; margin: 0; padding: 0; flex-wrap: nowrap; }
-    .sidebar-label { display: none; }
-    .sidebar-link {
-        white-space: nowrap; padding: 6px 10px; font-size: 0.72rem;
-        border-radius: 16px; background: rgba(255,255,255,0.08);
-        color: rgba(255,255,255,0.6); flex-shrink: 0;
-    }
-    .sidebar-link.active {
-        background: var(--saffron); color: white;
-    }
-    .sidebar-link .sidebar-icon { font-size: 0.8rem; width: auto; }
+    .admin-sidebar { display: none; }
     .admin-content { padding: 10px; }
 }
 
