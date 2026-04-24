@@ -110,6 +110,17 @@ const Store = {
         return this._cache.products.find(p => p.id === id) || null;
     },
 
+    /** Find a product by barcode (sync). */
+    getProductByBarcode(barcode) {
+        if (!barcode) return null;
+        return this._cache.products.find(p => p.barcode === barcode) || null;
+    },
+
+    /** Link a barcode to an existing product. */
+    async linkBarcode(productId, barcode) {
+        return await this.updateProduct(productId, { barcode });
+    },
+
     /**
      * Add a new product to Supabase and cache.
      * If product.image is a base64 data URL, upload it to storage first.
@@ -132,7 +143,8 @@ const Store = {
             stores: product.stores || [],
             image: product.images?.[0] || imageUrl || null,
             images: product.images || (imageUrl ? [imageUrl] : []),
-            stock: product.stock ?? null
+            stock: product.stock ?? null,
+            barcode: product.barcode || null
         };
 
         // If caller provided an id, use it; otherwise let Supabase generate UUID
