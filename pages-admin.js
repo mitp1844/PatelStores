@@ -983,13 +983,15 @@ function scanBarcodeForField(fieldId) {
         <div style="background:white;border-radius:16px;padding:16px;width:100%;max-width:400px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                 <span style="font-weight:700;font-size:0.95rem">📷 Scan Barcode</span>
-                <button onclick="closeBarcodeFieldModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer">✕</button>
+                <button id="close-barcode-modal-btn" style="background:none;border:none;font-size:1.3rem;cursor:pointer;padding:8px;z-index:999">✕</button>
             </div>
             <div id="barcode-field-reader" style="width:100%;border-radius:8px;overflow:hidden"></div>
             <p style="text-align:center;font-size:0.78rem;color:#64748B;margin-top:8px">Point camera at the barcode</p>
         </div>
     </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('close-barcode-modal-btn').addEventListener('click', closeBarcodeFieldModal);
+    document.getElementById('barcode-field-modal').addEventListener('click', function(e) { if (e.target === this) closeBarcodeFieldModal(); });
     const scanner = new Html5Qrcode("barcode-field-reader");
     window._fieldScanner = scanner;
     window._fieldScanTarget = fieldId;
