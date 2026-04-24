@@ -24,9 +24,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="main.css?v=20260423">
-    <link rel="stylesheet" href="components.css?v=20260423">
-    <link rel="stylesheet" href="pages.css?v=20260423">
+    <link rel="stylesheet" href="main.css?v=20260424">
+    <link rel="stylesheet" href="components.css?v=20260424">
+    <link rel="stylesheet" href="pages.css?v=20260424">
 </head>
 <body>
     <div id="app">
@@ -101,15 +101,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=20260423"></script>
-    <script src="data.js?v=20260423"></script>
-    <script src="store.js?v=20260423"></script>
-    <script src="router.js?v=20260423"></script>
-    <script src="components.js?v=20260423"></script>
-    <script src="pages-customer.js?v=20260423"></script>
-    <script src="pages-admin.js?v=20260423"></script>
-    <script src="pages-driver.js?v=20260423"></script>
-    <script src="app.js?v=20260423"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="supabase-config.js?v=20260424"></script>
+    <script src="data.js?v=20260424"></script>
+    <script src="store.js?v=20260424"></script>
+    <script src="router.js?v=20260424"></script>
+    <script src="components.js?v=20260424"></script>
+    <script src="pages-customer.js?v=20260424"></script>
+    <script src="pages-admin.js?v=20260424"></script>
+    <script src="pages-driver.js?v=20260424"></script>
+    <script src="app.js?v=20260424"></script>
 
     <!-- Nuke old service workers and cache -->
     <script>
@@ -127,7 +128,7 @@
       // Register new service worker after a delay
       window.addEventListener('load', () => {
         setTimeout(() => {
-          navigator.serviceWorker.register('/sw.js?v=20260423')
+          navigator.serviceWorker.register('/sw.js?v=20260424')
             .then(reg => console.log('[PWA] SW registered', reg.scope))
             .catch(err => console.warn('[PWA] SW failed', err));
         }, 3000);
