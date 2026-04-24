@@ -106,7 +106,7 @@ function adminProductCard(p) {
                         <span style="font-weight:800;color:var(--forest);font-size:0.88rem">${formatRWF(p.price)}</span>
                         <span style="font-size:0.72rem;font-weight:600;color:${stockColor}">${stockText}</span>
                     </div>
-                    <div style="font-size:0.7rem;color:var(--light-slate);margin-top:1px">${p.stores.map(s => STORES.find(st => st.id === s)?.name?.replace('Patel ','')).join(' · ')}</div>
+                    <div style="font-size:0.7rem;color:var(--light-slate);margin-top:1px">${p.stores.map(s => STORES.find(st => st.id === s)?.name?.replace('Patel ','')).join(' · ')}${p.barcode ? ` · 📊 ${p.barcode}` : ''}</div>
                 </div>
                 <div style="display:flex;gap:4px;flex-shrink:0">
                     <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="showEditProductForm('${p.id}')">✏️</button>
@@ -291,7 +291,32 @@ function renderAdminProducts() {
     const content = `
         <div class="admin-header">
             <h1 style="font-size:1.3rem">Products (${products.length})</h1>
-            <button class="btn btn-primary btn-sm" onclick="showAddProductForm()">+ Add Product</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-secondary btn-sm" onclick="openBarcodeScanner()">📷 Scan Barcode</button>
+                <button class="btn btn-primary btn-sm" onclick="showAddProductForm()">+ Add Product</button>
+            </div>
+        </div>
+
+        <!-- BARCODE SCANNER -->
+        <div id="barcode-scanner-container" style="display:none;margin-bottom:var(--gap-md)">
+            <div class="card" style="border:2px solid var(--forest)">
+                <div class="card-body" style="padding:14px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                        <h3 style="font-family:var(--font-body);font-weight:700;font-size:0.95rem">📷 Scan Barcode</h3>
+                        <button class="btn btn-ghost btn-sm" onclick="closeBarcodeScanner()">✕ Close</button>
+                    </div>
+                    <div id="barcode-reader" style="width:100%;border-radius:var(--radius-md);overflow:hidden"></div>
+                    <div style="margin-top:10px;text-align:center">
+                        <p style="color:var(--slate);font-size:0.82rem;margin-bottom:8px">Or enter barcode manually:</p>
+                        <div style="display:flex;gap:6px">
+                            <input type="text" class="form-input" id="manual-barcode" placeholder="Enter barcode number" style="flex:1" 
+                                onkeydown="if(event.key==='Enter')searchByBarcode(this.value)">
+                            <button class="btn btn-secondary btn-sm" onclick="searchByBarcode(document.getElementById('manual-barcode').value)">Search</button>
+                        </div>
+                    </div>
+                    <div id="barcode-result" style="display:none;margin-top:12px"></div>
+                </div>
+            </div>
         </div>
 
         <div class="search-bar" style="margin-bottom:var(--gap-sm)">
@@ -313,6 +338,7 @@ function renderAdminProducts() {
                         <div class="form-group"><label>Category</label><select class="form-input" id="new-prod-cat">${catOptions}</select></div>
                         <div class="form-group"><label>Emoji</label><input type="text" class="form-input" id="new-prod-emoji" placeholder="🛒" value="🛒"></div>
                     </div>
+                    <div class="form-group"><label>Barcode</label><input type="text" class="form-input" id="new-prod-barcode" placeholder="Scan or enter barcode (optional)"></div>
                     <div class="form-group">
                         <label>Stores</label>
                         <div style="display:flex;gap:var(--gap-sm);flex-wrap:wrap;margin-top:4px">${storeChecks}</div>
@@ -417,6 +443,7 @@ async function addNewProduct() {
     const category = document.getElementById('new-prod-cat').value;
     const emoji = document.getElementById('new-prod-emoji').value || '🛒';
     const stock = parseInt(document.getElementById('new-prod-stock').value) || null;
+    const barcode = document.getElementById('new-prod-barcode')?.value.trim() || null;
     const stores = Array.from(document.querySelectorAll('.new-prod-store:checked')).map(cb => cb.value);
     if (!name || !price || stores.length === 0) return showToast('Fill all fields and select a store', 'error');
     try {
@@ -427,7 +454,7 @@ async function addNewProduct() {
             const url = await Store.uploadFile('uploads', path, newProductImages[i]);
             imageUrls.push(url);
         }
-        await Store.addProduct({ name, category, price, emoji, stores, stock, image: imageUrls[0] || null, images: imageUrls });
+        await Store.addProduct({ name, category, price, emoji, stores, stock, barcode, image: imageUrls[0] || null, images: imageUrls });
         newProductImages = [];
         showToast('"' + name + '" added!');
         renderAdminProducts();
@@ -807,4 +834,141 @@ function unlockAnalytics() {
         showToast('Analytics unlocked');
         renderAdminAnalytics();
     } else { showToast('Wrong password', 'error'); }
+}
+
+// ═══════════════════════════════════════════
+// BARCODE SCANNER
+// ═══════════════════════════════════════════
+
+let barcodeScanner = null;
+
+function openBarcodeScanner() {
+    document.getElementById('barcode-scanner-container').style.display = '';
+    document.getElementById('barcode-result').style.display = 'none';
+    document.getElementById('manual-barcode').value = '';
+
+    // Stop existing scanner if any
+    if (barcodeScanner) {
+        barcodeScanner.clear().catch(() => {});
+        barcodeScanner = null;
+    }
+
+    barcodeScanner = new Html5Qrcode("barcode-reader");
+    barcodeScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 120 }, aspectRatio: 1.5 },
+        (decodedText) => {
+            // Barcode scanned successfully
+            barcodeScanner.stop().catch(() => {});
+            document.getElementById('manual-barcode').value = decodedText;
+            searchByBarcode(decodedText);
+        },
+        () => {} // ignore scan errors
+    ).catch(err => {
+        console.warn('Camera not available:', err);
+        document.getElementById('barcode-reader').innerHTML = `
+            <div style="padding:20px;text-align:center;background:var(--cream);border-radius:var(--radius-md)">
+                <div style="font-size:2rem;margin-bottom:8px">📷</div>
+                <p style="color:var(--slate);font-size:0.85rem">Camera not available. Use manual entry below.</p>
+            </div>
+        `;
+    });
+
+    document.getElementById('barcode-scanner-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeBarcodeScanner() {
+    if (barcodeScanner) {
+        barcodeScanner.stop().catch(() => {});
+        barcodeScanner.clear().catch(() => {});
+        barcodeScanner = null;
+    }
+    document.getElementById('barcode-scanner-container').style.display = 'none';
+}
+
+function searchByBarcode(barcode) {
+    barcode = barcode.trim();
+    if (!barcode) return showToast('Enter or scan a barcode', 'error');
+
+    const product = Store.getProductByBarcode(barcode);
+    const resultDiv = document.getElementById('barcode-result');
+    resultDiv.style.display = '';
+
+    if (product) {
+        // Product found — show it with edit options
+        const img = product.images?.[0] || product.image;
+        resultDiv.innerHTML = `
+            <div style="background:var(--green-light);border:2px solid var(--forest);border-radius:var(--radius-md);padding:14px">
+                <div style="font-weight:700;color:var(--forest);margin-bottom:8px;font-size:0.9rem">✅ Product Found!</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                    <div style="width:52px;height:52px;border-radius:var(--radius-sm);background:var(--cream);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                        ${img ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:1.8rem">${product.emoji}</span>`}
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:0.95rem">${product.name}</div>
+                        <div style="color:var(--forest);font-weight:800;font-size:1rem">${formatRWF(product.price)}</div>
+                        <div style="font-size:0.78rem;color:var(--slate)">Stock: ${product.stock != null ? product.stock : 'N/A'} · Barcode: ${barcode}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn btn-primary btn-sm" onclick="closeBarcodeScanner();showEditProductForm('${product.id}')">✏️ Edit Product</button>
+                    <button class="btn btn-outline btn-sm" onclick="quickUpdateStock('${product.id}')">📦 Update Stock</button>
+                </div>
+            </div>
+        `;
+    } else {
+        // No product found — offer to link or create
+        const allProducts = Store.getProducts();
+        resultDiv.innerHTML = `
+            <div style="background:var(--orange-light);border:2px solid var(--orange);border-radius:var(--radius-md);padding:14px">
+                <div style="font-weight:700;color:var(--orange);margin-bottom:8px;font-size:0.9rem">⚠️ No product with barcode "${barcode}"</div>
+                <p style="font-size:0.82rem;color:var(--slate);margin-bottom:10px">Link this barcode to an existing product, or create a new one.</p>
+
+                <div style="margin-bottom:10px">
+                    <label style="font-weight:600;font-size:0.82rem;display:block;margin-bottom:4px">Link to existing product:</label>
+                    <select class="form-input" id="barcode-link-product" style="font-size:0.85rem">
+                        <option value="">— Select a product —</option>
+                        ${allProducts.map(p => `<option value="${p.id}">${p.emoji} ${p.name} (${formatRWF(p.price)})${p.barcode ? ' [has barcode]' : ''}</option>`).join('')}
+                    </select>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn btn-secondary btn-sm" onclick="linkBarcodeToProduct('${barcode}')">🔗 Link Barcode</button>
+                    <button class="btn btn-primary btn-sm" onclick="closeBarcodeScanner();showAddProductFormWithBarcode('${barcode}')">+ Create New Product</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+async function linkBarcodeToProduct(barcode) {
+    const productId = document.getElementById('barcode-link-product').value;
+    if (!productId) return showToast('Select a product first', 'error');
+
+    try {
+        await Store.linkBarcode(productId, barcode);
+        showToast('Barcode linked!');
+        searchByBarcode(barcode); // refresh to show the found state
+    } catch (err) {
+        showToast('Failed: ' + err.message, 'error');
+    }
+}
+
+function showAddProductFormWithBarcode(barcode) {
+    showAddProductForm();
+    // Set the barcode in the form
+    const barcodeInput = document.getElementById('new-prod-barcode');
+    if (barcodeInput) barcodeInput.value = barcode;
+}
+
+function quickUpdateStock(productId) {
+    const product = Store.getProduct(productId);
+    if (!product) return;
+    const newStock = prompt('Current stock: ' + (product.stock ?? 'N/A') + '\n\nEnter new stock count:', product.stock || '');
+    if (newStock === null) return;
+    const qty = parseInt(newStock);
+    if (isNaN(qty) || qty < 0) return showToast('Enter a valid number', 'error');
+    Store.updateProduct(productId, { stock: qty }).then(() => {
+        showToast(product.name + ' stock updated to ' + qty);
+        renderAdminProducts();
+    }).catch(err => showToast('Failed: ' + err.message, 'error'));
 }
