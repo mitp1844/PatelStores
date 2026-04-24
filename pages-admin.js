@@ -979,36 +979,56 @@ function quickUpdateStock(productId) {
 }
 function scanBarcodeForField(fieldId) {
     if (!window.Html5Qrcode) return showToast('Scanner not loaded', 'error');
-    const modalHtml = `<div id="barcode-field-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px">
-        <div style="background:white;border-radius:16px;padding:16px;width:100%;max-width:400px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                <span style="font-weight:700;font-size:0.95rem">📷 Scan Barcode</span>
-                <button id="close-barcode-modal-btn" style="background:none;border:none;font-size:1.3rem;cursor:pointer;padding:8px;z-index:999">✕</button>
-            </div>
-            <div id="barcode-field-reader" style="width:100%;border-radius:8px;overflow:hidden"></div>
-            <p style="text-align:center;font-size:0.78rem;color:#64748B;margin-top:8px">Point camera at the barcode</p>
-        </div>
-    </div>`;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.getElementById('close-barcode-modal-btn').addEventListener('click', closeBarcodeFieldModal);
-    document.getElementById('barcode-field-modal').addEventListener('click', function(e) { if (e.target === this) closeBarcodeFieldModal(); });
-    const scanner = new Html5Qrcode("barcode-field-reader");
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'barcode-field-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;display:flex;flex-direction:column;align-items:center;padding:16px;padding-top:60px';
+    
+    // Close button at the very top
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Close Scanner';
+    closeBtn.style.cssText = 'position:fixed;top:16px;right:16px;z-index:999;background:#DC2626;color:white;border:none;border-radius:12px;padding:12px 20px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit';
+    modal.appendChild(closeBtn);
+    
+    // Scanner box
+    const box = document.createElement('div');
+    box.style.cssText = 'background:white;border-radius:16px;padding:16px;width:100%;max-width:400px';
+    box.innerHTML = '<div id="barcode-field-reader" style="width:100%;border-radius:8px;overflow:hidden"></div><p style="text-align:center;font-size:13px;color:#64748B;margin-top:8px">Point camera at the barcode</p>';
+    modal.appendChild(box);
+    
+    document.body.appendChild(modal);
+    
+    // Close function
+    function closeIt() {
+        try { if (window._fieldScanner) window._fieldScanner.stop().catch(()=>{}); } catch(e) {}
+        try { if (window._fieldScanner) window._fieldScanner.clear().catch(()=>{}); } catch(e) {}
+        window._fieldScanner = null;
+        if (document.getElementById('barcode-field-modal')) document.getElementById('barcode-field-modal').remove();
+    }
+    
+    closeBtn.ontouchend = function(e) { e.preventDefault(); closeIt(); };
+    closeBtn.onclick = function(e) { e.preventDefault(); closeIt(); };
+    
+    // Start scanner
+    var scanner = new Html5Qrcode("barcode-field-reader");
     window._fieldScanner = scanner;
-    window._fieldScanTarget = fieldId;
     scanner. start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 120 } },
-        (code) => {
+        function(code) {
             document.getElementById(fieldId).value = code;
-            closeBarcodeFieldModal();
+            closeIt();
             showToast('Barcode scanned: ' + code);
         },
-        () => {}
-    ).catch(() => { closeBarcodeFieldModal(); showToast('Camera not available', 'error'); });
+        function() {}
+    ).catch(function() { closeIt(); showToast('Camera not available', 'error'); });
 }
 
 function closeBarcodeFieldModal() {
-    if (window._fieldScanner) { window._fieldScanner.stop().catch(() => {}); window._fieldScanner.clear().catch(() => {}); window._fieldScanner = null; }
-    const modal = document.getElementById('barcode-field-modal');
+    try { if (window._fieldScanner) window._fieldScanner.stop().catch(()=>{}); } catch(e) {}
+    try { if (window._fieldScanner) window._fieldScanner.clear().catch(()=>{}); } catch(e) {}
+    window._fieldScanner = null;
+    var modal = document.getElementById('barcode-field-modal');
     if (modal) modal.remove();
 }
