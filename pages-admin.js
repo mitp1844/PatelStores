@@ -95,7 +95,7 @@ function adminProductCard(p) {
     const stockText = p.stock === 0 ? 'Out of stock' : p.stock != null ? p.stock + ' left' : 'In stock';
 
     return `
-        <div class="card" style="margin-bottom:8px">
+       <div class="card" style="margin-bottom:8px" data-barcode="${p.barcode || ''}">
             <div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
                 <div style="width:52px;height:52px;border-radius:var(--radius-sm);background:var(--cream);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
                     ${img}
@@ -319,9 +319,12 @@ function renderAdminProducts() {
             </div>
         </div>
 
-        <div class="search-bar" style="margin-bottom:var(--gap-sm)">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Search products..." oninput="searchAdminProducts(this.value)">
+        <div style="display:flex;gap:6px;margin-bottom:var(--gap-sm)">
+            <div class="search-bar" style="flex:1;margin-bottom:0">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Search by name or barcode..." oninput="searchAdminProducts(this.value)">
+            </div>
+            <button class="btn btn-secondary btn-sm" style="flex-shrink:0;padding:8px 12px" onclick="openBarcodeScanner()">📷</button>
         </div>
 
         <!-- ADD PRODUCT FORM -->
@@ -406,9 +409,11 @@ function renderAdminProducts() {
 }
 
 function searchAdminProducts(query) {
-    const q = query.toLowerCase();
+    const q = query.trim().toLowerCase();
     document.querySelectorAll('#admin-products-list .card').forEach(card => {
-        card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+        const text = card.textContent.toLowerCase();
+        const barcode = card.dataset.barcode || '';
+        card.style.display = (text.includes(q) || barcode.includes(q)) ? '' : 'none';
     });
 }
 
