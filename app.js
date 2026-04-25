@@ -19,21 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check auth state and route
     const user = Store.getCurrentUser();
 if (user) {
-        if (user.role === 'admin') {
-            try {
-                const saved = localStorage.getItem('patel_last_route');
-                if (saved) {
-                    const { route, params } = JSON.parse(saved);
-                    if (route.startsWith('admin')) {
-                        navigate(route, params);
-                    } else {
-                        navigate('admin');
-                    }
-                } else {
-                    navigate('admin');
-                }
-            } catch(e) { navigate('admin'); }
-        }
+        if (user.role === 'admin') navigate('admin');
         else if (user.role === 'driver') navigate('driver');
         else {
             // Restore last visited page on refresh
