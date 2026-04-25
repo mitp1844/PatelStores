@@ -43,9 +43,7 @@ function navigate(route, params = {}) {
     routeParams = params;
     // Save to localStorage so refresh restores the page
     try {
-        // Don't save admin/driver routes for security
-        if (!['admin','admin-orders','admin-payments','admin-products','admin-categories','admin-customers','admin-customer-detail','admin-drivers','admin-analytics','driver','staff-login'].includes(route)) {
-            localStorage.setItem('patel_last_route', JSON.stringify({ route, params }));
+       localStorage.setItem('patel_last_route', JSON.stringify({ route, params }));   localStorage.setItem('patel_last_route', JSON.stringify({ route, params }));
         }
     } catch(e) {}
     window.scrollTo({ top: 0, behavior: 'instant' });
