@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════
-   PATEL STORES v2 — Customer Pages
-   Amazon-style: products first, fewer taps
-   ═══════════════════════════════════════════ */
-
 const STORE_MOMO_CODES = {
     'supermarket': '004305',
     'grocers': '1602698',
@@ -201,9 +196,9 @@ function renderProductDetail(productId, storeId) {
             <div class="product-detail-grid" style="padding:0 12px">
                 <!-- Images -->
                 <div>
-                    <div style="width:100%;height:320px;border-radius:var(--radius-md);overflow:hidden;background:var(--cream);display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+                    <div style="width:100%;height:400px;border-radius:var(--radius-md);overflow:hidden;background:var(--cream);display:flex;align-items:center;justify-content:center;margin-bottom:8px;padding:12px">
                         ${images.length > 0
-                            ? `<img src="${images[0]}" style="width:100%;height:100%;object-fit:cover" id="main-photo-img">`
+                            ? `<img src="${images[0]}" style="max-width:100%;max-height:100%;object-fit:contain" id="main-photo-img">`
                             : `<span style="font-size:6rem">${product.emoji}</span>`}
                     </div>
                     ${images.length > 1 ? `
