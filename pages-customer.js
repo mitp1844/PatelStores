@@ -52,10 +52,15 @@ function renderHome() {
 
         <!-- Categories -->
         <div style="padding:10px 12px 0">
-            <div class="categories-bar" id="home-categories">
-                ${Store.getCategories().map(c => `
-                    <button class="cat-chip ${c.id === 'all' ? 'active' : ''}" onclick="filterHomeCategory('${c.id}', this)">${c.emoji} ${c.name}</button>
-                `).join('')}
+            <div style="display:flex;align-items:center;gap:4px">
+                <button onclick="document.getElementById('home-categories').scrollBy({left:-150,behavior:'smooth'})" style="flex-shrink:0;background:var(--cream-dark);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center">‹</button>
+                <div class="categories-bar" id="home-categories" style="flex:1">
+                    <button class="cat-chip active" onclick="filterHomeCategory('all', this)">🛍️ All</button>
+                    ${Store.getCategories().filter(c => c.id !== 'all').map(c => `
+                        <button class="cat-chip" onclick="filterHomeCategory('${c.id}', this)">${c.emoji} ${c.name}</button>
+                    `).join('')}
+                </div>
+                <button onclick="document.getElementById('home-categories').scrollBy({left:150,behavior:'smooth'})" style="flex-shrink:0;background:var(--cream-dark);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center">›</button>
             </div>
         </div>
 
