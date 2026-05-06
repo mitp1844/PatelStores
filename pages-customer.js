@@ -20,6 +20,10 @@ function renderHome() {
     const store = STORES.find(s => s.id === selectedStoreId) || STORES[0];
     const allProducts = Store.getProducts().filter(p => p.stores && p.stores.includes(selectedStoreId));
 
+window._allHomeProducts = allProducts;
+window._homeStoreId = selectedStoreId;
+window._loadMoreOffset = 100;
+    
     container.innerHTML = `
         <!-- Delivery bar -->
         <div style="background:var(--forest);color:white;padding:8px 12px;font-size:0.78rem;display:flex;align-items:center;justify-content:center;gap:6px">
@@ -64,6 +68,17 @@ function renderHome() {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                 <span style="font-size:0.82rem;color:var(--slate)" id="product-count">${allProducts.length} products</span>
             </div>
+            <div class="product-grid" id="products-grid">
+                ${allProducts.slice(0, 100).map(p => productCard(p, selectedStoreId)).join('')}
+            </div>
+            ${allProducts.length > 100 ? `
+                <div id="load-more-wrap" style="text-align:center;padding:16px 0">
+                    <span style="font-size:0.78rem;color:var(--slate)" id="shown-count">Showing 100 of ${allProducts.length}</span><br>
+                    <button onclick="loadMoreProducts()" class="btn btn-primary" style="margin-top:8px;padding:10px 32px;font-size:0.85rem">
+                        View More Products
+                    </button>
+                </div>
+            ` : ''}
             <div class="product-grid" id="products-grid">
                 ${allProducts.map(p => productCard(p, selectedStoreId)).join('')}
             </div>
@@ -124,6 +139,25 @@ function filterHomeProducts() {
         if (show) count++;
     });
     document.getElementById('product-count').textContent = count + ' products';
+}
+
+window._loadMoreOffset = 100;
+window._allHomeProducts = [];
+window._homeStoreId = '';
+
+function loadMoreProducts() {
+    const grid = document.getElementById('products-grid');
+    const next = window._allHomeProducts.slice(window._loadMoreOffset, window._loadMoreOffset + 100);
+    next.forEach(p => grid.insertAdjacentHTML('beforeend', productCard(p, window._homeStoreId)));
+    window._loadMoreOffset += 100;
+
+    const shown = Math.min(window._loadMoreOffset, window._allHomeProducts.length);
+    const wrap = document.getElementById('load-more-wrap');
+    if (shown >= window._allHomeProducts.length) {
+        if (wrap) wrap.remove();
+    } else {
+        document.getElementById('shown-count').textContent = `Showing ${shown} of ${window._allHomeProducts.length}`;
+    }
 }
 
 // ═══════════════════════════════════════════
