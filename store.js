@@ -33,7 +33,17 @@ const Store = {
 
         // Fetch all tables in parallel
         const [prodRes, ordRes, custRes, drvRes, catRes] = await Promise.all([
-            sb.from('products').select('*').order('created_at', { ascending: false }),
+            (async () => {
+    let all = [], from = 0, size = 1000;
+    while (true) {
+        const { data } = await sb.from('products').select('*').order('created_at', { ascending: false }).range(from, from + size - 1);
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < size) break;
+        from += size;
+    }
+    return { data: all };
+})(),
             sb.from('orders').select('*').order('created_at', { ascending: false }),
             sb.from('customers').select('*').order('created_at', { ascending: false }),
             sb.from('drivers').select('*').order('created_at', { ascending: false }),
