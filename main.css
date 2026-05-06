@@ -421,3 +421,30 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--cream-dark); border-radius: 3px; }
+
+/* ── Always show a visible, grabbable scrollbar ── */
+html {
+    overflow-y: scroll;
+}
+
+/* Style the scrollbar for Webkit browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 12px;
+}
+::-webkit-scrollbar-track {
+    background: var(--cream);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--slate);
+    border-radius: 6px;
+    border: 2px solid var(--cream);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--coffee);
+}
+
+/* Firefox */
+html {
+    scrollbar-width: auto;
+    scrollbar-color: var(--slate) var(--cream);
+}
