@@ -486,7 +486,14 @@ const Store = {
 
     /** Re-fetch products from Supabase into cache. */
     async refreshProducts() {
-        const { data } = await sb.from('products').select('*').order('created_at', { ascending: false });
+        let data = [], from = 0, size = 1000;
+while (true) {
+    const res = await sb.from('products').select('*').order('created_at', { ascending: false }).range(from, from + size - 1);
+    if (!res.data || res.data.length === 0) break;
+    data = data.concat(res.data);
+    if (res.data.length < size) break;
+    from += size;
+}
         this._cache.products = data || [];
         return this._cache.products;
     },
