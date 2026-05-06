@@ -30,15 +30,19 @@ function renderHome() {
     window._homeStoreId = selectedStoreId;
     window._loadMoreOffset = 100;
     window._homeCategory = 'all';
+    window._filteredHomeProducts = null;
 
     container.innerHTML = `
+        <!-- Sticky header: delivery + search + categories -->
+        <div style="position:sticky;top:52px;z-index:50">
+
         <!-- Delivery bar -->
         <div style="background:var(--forest);color:white;padding:8px 12px;font-size:0.78rem;display:flex;align-items:center;justify-content:center;gap:6px">
             <span>🚗</span> Free delivery on orders over RWF 15,000 in Kigali
         </div>
 
         <!-- Store picker + Search -->
-        <div style="background:white;padding:10px 12px;position:sticky;top:52px;z-index:50;border-bottom:1px solid rgba(0,0,0,0.06)">
+        <div style="background:white;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,0.06)">
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
                 <div style="flex:1;position:relative">
                     <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:0.9rem">🔍</span>
@@ -57,7 +61,7 @@ function renderHome() {
         </div>
 
         <!-- Categories -->
-        <div style="padding:10px 12px 0">
+        <div style="padding:10px 12px 0;background:#f2ede5">
             <div style="display:flex;align-items:center;gap:4px">
                 <button onclick="document.getElementById('home-categories').scrollBy({left:-150,behavior:'smooth'})" style="flex-shrink:0;background:var(--cream-dark);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center">‹</button>
                 <div class="categories-bar" id="home-categories" style="flex:1">
@@ -69,6 +73,8 @@ function renderHome() {
                 <button onclick="document.getElementById('home-categories').scrollBy({left:150,behavior:'smooth'})" style="flex-shrink:0;background:var(--cream-dark);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center">›</button>
             </div>
         </div>
+
+        </div><!-- end sticky header -->
 
         <!-- Products Grid -->
         <div style="padding:6px 12px 24px">
@@ -126,9 +132,13 @@ function filterHomeCategory(catId, btn) {
     window._homeCategory = catId;
 
     // Re-filter from the full product list and reset pagination
-    const filtered = catId === 'all'
+    const q = document.getElementById('home-search').value.toLowerCase();
+    let filtered = catId === 'all'
         ? window._allHomeProducts
         : window._allHomeProducts.filter(p => p.category === catId);
+    if (q) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+    }
 
     const grid = document.getElementById('products-grid');
     grid.innerHTML = filtered.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
