@@ -13,17 +13,24 @@ function setSelectedStore(storeId) {
 }
 
 // ═══════════════════════════════════════════
-// HOME — Products-first layout
+// HOME — Products-first layout (Load More pagination)
 // ═══════════════════════════════════════════
+window._allHomeProducts = [];
+window._homeStoreId = '';
+window._loadMoreOffset = 100;
+window._homeCategory = 'all';
+
 function renderHome() {
     const container = document.getElementById('page-container');
     const store = STORES.find(s => s.id === selectedStoreId) || STORES[0];
     const allProducts = Store.getProducts().filter(p => p.stores && p.stores.includes(selectedStoreId));
 
-window._allHomeProducts = allProducts;
-window._homeStoreId = selectedStoreId;
-window._loadMoreOffset = 100;
-    
+    // Store for Load More
+    window._allHomeProducts = allProducts;
+    window._homeStoreId = selectedStoreId;
+    window._loadMoreOffset = 100;
+    window._homeCategory = 'all';
+
     container.innerHTML = `
         <!-- Delivery bar -->
         <div style="background:var(--forest);color:white;padding:8px 12px;font-size:0.78rem;display:flex;align-items:center;justify-content:center;gap:6px">
@@ -79,9 +86,6 @@ window._loadMoreOffset = 100;
                     </button>
                 </div>
             ` : ''}
-            <div class="product-grid" id="products-grid">
-                ${allProducts.map(p => productCard(p, selectedStoreId)).join('')}
-            </div>
             ${allProducts.length === 0 ? `
                 <div class="empty-state">
                     <div class="empty-icon">📦</div>
@@ -119,44 +123,76 @@ function switchStore(storeId) {
 function filterHomeCategory(catId, btn) {
     document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    const cards = document.querySelectorAll('.product-card');
-    let count = 0;
-    cards.forEach(card => {
-        const show = catId === 'all' || card.dataset.category === catId;
-        card.style.display = show ? '' : 'none';
-        if (show) count++;
-    });
-    document.getElementById('product-count').textContent = count + ' products';
+    window._homeCategory = catId;
+
+    // Re-filter from the full product list and reset pagination
+    const filtered = catId === 'all'
+        ? window._allHomeProducts
+        : window._allHomeProducts.filter(p => p.category === catId);
+
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = filtered.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
+    document.getElementById('product-count').textContent = filtered.length + ' products';
+
+    // Update or remove Load More button
+    const wrap = document.getElementById('load-more-wrap');
+    if (filtered.length > 100) {
+        if (wrap) {
+            document.getElementById('shown-count').textContent = `Showing 100 of ${filtered.length}`;
+            wrap.style.display = '';
+        }
+    } else {
+        if (wrap) wrap.style.display = 'none';
+    }
+    window._loadMoreOffset = 100;
+    window._filteredHomeProducts = filtered;
 }
 
 function filterHomeProducts() {
     const q = document.getElementById('home-search').value.toLowerCase();
-    const cards = document.querySelectorAll('.product-card');
-    let count = 0;
-    cards.forEach(card => {
-        const show = card.dataset.name.includes(q);
-        card.style.display = show ? '' : 'none';
-        if (show) count++;
-    });
-    document.getElementById('product-count').textContent = count + ' products';
+    const catId = window._homeCategory || 'all';
+
+    // Filter from full list by search + category
+    let filtered = window._allHomeProducts;
+    if (catId !== 'all') {
+        filtered = filtered.filter(p => p.category === catId);
+    }
+    if (q) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+    }
+
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = filtered.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
+    document.getElementById('product-count').textContent = filtered.length + ' products';
+
+    // Update or remove Load More button
+    const wrap = document.getElementById('load-more-wrap');
+    if (filtered.length > 100) {
+        if (wrap) {
+            document.getElementById('shown-count').textContent = `Showing 100 of ${filtered.length}`;
+            wrap.style.display = '';
+        }
+    } else {
+        if (wrap) wrap.style.display = 'none';
+    }
+    window._loadMoreOffset = 100;
+    window._filteredHomeProducts = filtered;
 }
 
-window._loadMoreOffset = 100;
-window._allHomeProducts = [];
-window._homeStoreId = '';
-
 function loadMoreProducts() {
+    // Use filtered list if search/category is active, otherwise full list
+    const products = window._filteredHomeProducts || window._allHomeProducts;
     const grid = document.getElementById('products-grid');
-    const next = window._allHomeProducts.slice(window._loadMoreOffset, window._loadMoreOffset + 100);
+    const next = products.slice(window._loadMoreOffset, window._loadMoreOffset + 100);
     next.forEach(p => grid.insertAdjacentHTML('beforeend', productCard(p, window._homeStoreId)));
     window._loadMoreOffset += 100;
 
-    const shown = Math.min(window._loadMoreOffset, window._allHomeProducts.length);
+    const shown = Math.min(window._loadMoreOffset, products.length);
     const wrap = document.getElementById('load-more-wrap');
-    if (shown >= window._allHomeProducts.length) {
-        if (wrap) wrap.remove();
+    if (shown >= products.length) {
+        if (wrap) wrap.style.display = 'none';
     } else {
-        document.getElementById('shown-count').textContent = `Showing ${shown} of ${window._allHomeProducts.length}`;
+        document.getElementById('shown-count').textContent = `Showing ${shown} of ${products.length}`;
     }
 }
 
