@@ -377,16 +377,22 @@
 .hm-categories {
     padding: 16px 0 8px;
     background: white;
+    overflow: hidden;
 }
 .hm-cat-scroll {
     display: flex;
     gap: 6px;
-    overflow-x: auto;
     padding: 0 16px 8px;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    animation: hm-cat-autoscroll 30s linear infinite;
+    width: max-content;
 }
-.hm-cat-scroll::-webkit-scrollbar { display: none; }
+.hm-cat-scroll:hover {
+    animation-play-state: paused;
+}
+@keyframes hm-cat-autoscroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
 
 .hm-cat-item {
     flex-shrink: 0;
