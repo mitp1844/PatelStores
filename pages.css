@@ -394,13 +394,41 @@
     100% { transform: translateX(-50%); }
 }
 
-/* ── Category chip bar (static, scrollable) ── */
+/* ── Category chip bar (static, scrollable with arrows) ── */
+.hm-cat-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px 12px;
+    background: white;
+}
+.hm-cat-arrow {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cream-dark);
+    background: white;
+    color: var(--coffee);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.hm-cat-arrow:hover {
+    background: var(--cream);
+    border-color: var(--saffron);
+}
+.hm-cat-arrow:active { transform: scale(0.9); }
+
 .hm-cat-bar {
     display: flex;
     gap: 6px;
     overflow-x: auto;
-    padding: 0 16px 12px;
-    background: white;
+    flex: 1;
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
