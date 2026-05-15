@@ -139,19 +139,6 @@ function renderHome() {
                 <button class="hm-cat-arrow hm-cat-arrow-right" onclick="document.getElementById('hm-cat-bar').scrollBy({left:150,behavior:'smooth'})">›</button>
             </div>
 
-            <!-- PROMO BANNER -->
-            <div class="hm-promo">
-                <div class="hm-promo-card">
-                    <div class="hm-promo-text">
-                        <div class="hm-promo-tag">Now Open</div>
-                        <div class="hm-promo-title">Shop all 3 Patel Stores online</div>
-                        <div class="hm-promo-sub">Supermarket · Grocers · Shop — browse from anywhere, pay with MTN MoMo or cash</div>
-                        <button class="btn btn-primary btn-sm" onclick="homeBrowseAll()" style="margin-top:10px">Browse All →</button>
-                    </div>
-                    <div class="hm-promo-emoji">🛒</div>
-                </div>
-            </div>
-
             <!-- FEATURED PICKS -->
             ${featured.length > 0 ? `
             <div class="hm-row">
@@ -181,6 +168,19 @@ function renderHome() {
                     </div>
                 </div>`;
             }).join('')}
+
+            <!-- PROMO BANNER — bottom CTA -->
+            <div class="hm-promo">
+                <div class="hm-promo-card">
+                    <div class="hm-promo-text">
+                        <div class="hm-promo-tag">Now Open</div>
+                        <div class="hm-promo-title">Shop all 3 Patel Stores online</div>
+                        <div class="hm-promo-sub">Supermarket · Grocers · Shop — browse from anywhere, pay with MTN MoMo or cash</div>
+                        <button class="btn btn-primary btn-sm" onclick="homeBrowseAll()" style="margin-top:10px">Browse All →</button>
+                    </div>
+                    <div class="hm-promo-emoji">🛒</div>
+                </div>
+            </div>
 
             <!-- STORE INFO -->
             <div class="hm-stores-section">
