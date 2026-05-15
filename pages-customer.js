@@ -127,12 +127,16 @@ function renderHome() {
                 </div>
             </div>
 
-            <!-- CATEGORY CHIPS — static, manually scrollable -->
-            <div class="hm-cat-bar">
-                <button class="hm-chip active" onclick="homeBrowseAll(); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">🛍️ All</button>
-                ${activeCats.map(c => `
-                    <button class="hm-chip" onclick="homeBrowseCategory('${c.id}'); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">${c.emoji} ${c.name}</button>
-                `).join('')}
+            <!-- CATEGORY CHIPS — static, manually scrollable with arrows -->
+            <div class="hm-cat-bar-wrap">
+                <button class="hm-cat-arrow hm-cat-arrow-left" onclick="document.getElementById('hm-cat-bar').scrollBy({left:-150,behavior:'smooth'})">‹</button>
+                <div class="hm-cat-bar" id="hm-cat-bar">
+                    <button class="hm-chip active" onclick="homeBrowseAll(); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">🛍️ All</button>
+                    ${activeCats.map(c => `
+                        <button class="hm-chip" onclick="homeBrowseCategory('${c.id}'); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">${c.emoji} ${c.name}</button>
+                    `).join('')}
+                </div>
+                <button class="hm-cat-arrow hm-cat-arrow-right" onclick="document.getElementById('hm-cat-bar').scrollBy({left:150,behavior:'smooth'})">›</button>
             </div>
 
             <!-- PROMO BANNER -->
