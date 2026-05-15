@@ -394,6 +394,39 @@
     100% { transform: translateX(-50%); }
 }
 
+/* ── Category chip bar (static, scrollable) ── */
+.hm-cat-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 0 16px 12px;
+    background: white;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.hm-cat-bar::-webkit-scrollbar { display: none; }
+
+.hm-chip {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: var(--radius-full);
+    background: var(--cream);
+    border: 1.5px solid var(--cream-dark);
+    font-weight: 600;
+    font-size: 0.76rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    color: var(--coffee-light);
+    font-family: inherit;
+}
+.hm-chip:active { transform: scale(0.96); }
+.hm-chip.active {
+    background: var(--coffee);
+    border-color: var(--coffee);
+    color: white;
+}
+
 .hm-cat-item {
     flex-shrink: 0;
     width: 76px;
