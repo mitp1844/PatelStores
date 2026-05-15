@@ -105,9 +105,17 @@ function renderHome() {
         <!-- ═══ CURATED HOME (visible by default) ═══ -->
         <div id="hm-home-content">
 
-            <!-- CATEGORY CIRCLES — Instacart style -->
+            <!-- CATEGORY CIRCLES — Instacart style, auto-scrolling -->
             <div class="hm-categories">
                 <div class="hm-cat-scroll">
+                    ${activeCats.map(c => {
+                        const img = _catThumb(c.id, allProducts);
+                        return `
+                        <div class="hm-cat-item" onclick="homeBrowseCategory('${c.id}')">
+                            <div class="hm-cat-circle">${img ? `<img src="${img}" alt="${c.name}">` : `<span>${c.emoji}</span>`}</div>
+                            <div class="hm-cat-name">${c.name}</div>
+                        </div>`;
+                    }).join('')}
                     ${activeCats.map(c => {
                         const img = _catThumb(c.id, allProducts);
                         return `
