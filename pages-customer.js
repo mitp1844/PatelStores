@@ -105,7 +105,7 @@ function renderHome() {
         <!-- ═══ CURATED HOME (visible by default) ═══ -->
         <div id="hm-home-content">
 
-            <!-- CATEGORY CIRCLES — Instacart style, auto-scrolling -->
+            <!-- CATEGORY CIRCLES — auto-scrolling showcase -->
             <div class="hm-categories">
                 <div class="hm-cat-scroll">
                     ${activeCats.map(c => {
@@ -125,6 +125,14 @@ function renderHome() {
                         </div>`;
                     }).join('')}
                 </div>
+            </div>
+
+            <!-- CATEGORY CHIPS — static, manually scrollable -->
+            <div class="hm-cat-bar">
+                <button class="hm-chip active" onclick="homeBrowseAll(); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">🛍️ All</button>
+                ${activeCats.map(c => `
+                    <button class="hm-chip" onclick="homeBrowseCategory('${c.id}'); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">${c.emoji} ${c.name}</button>
+                `).join('')}
             </div>
 
             <!-- PROMO BANNER -->
