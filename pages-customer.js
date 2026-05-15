@@ -13,7 +13,7 @@ function setSelectedStore(storeId) {
 }
 
 // ═══════════════════════════════════════════
-// HOME — Products-first layout (Load More pagination)
+// HOME — Instacart / Jumia-style curated layout
 // ═══════════════════════════════════════════
 window._allHomeProducts = [];
 window._homeStoreId = '';
@@ -24,100 +24,251 @@ function renderHome() {
     const container = document.getElementById('page-container');
     const store = STORES.find(s => s.id === selectedStoreId) || STORES[0];
     const allProducts = Store.getProducts().filter(p => p.stores && p.stores.includes(selectedStoreId));
+    const categories = Store.getCategories().filter(c => c.id !== 'all');
 
-    // Store for Load More
     window._allHomeProducts = allProducts;
     window._homeStoreId = selectedStoreId;
     window._loadMoreOffset = 100;
     window._homeCategory = 'all';
     window._filteredHomeProducts = null;
 
-    container.innerHTML = `
-        <!-- Sticky header: delivery + search + categories -->
-        <div style="position:sticky;top:52px;z-index:50">
+    // Organize products by category
+    const byCat = {};
+    allProducts.forEach(p => {
+        if (!byCat[p.category]) byCat[p.category] = [];
+        byCat[p.category].push(p);
+    });
 
-        <!-- Delivery bar -->
-        <div style="background:var(--forest);color:white;padding:8px 12px;font-size:0.78rem;display:flex;align-items:center;justify-content:center;gap:6px">
-            <span>🚗</span> Free delivery on orders over RWF 15,000 in Kigali
+    // Categories that have products, sorted by count
+    const activeCats = categories.filter(c => byCat[c.id] && byCat[c.id].length > 0)
+        .sort((a, b) => (byCat[b.id]?.length || 0) - (byCat[a.id]?.length || 0));
+
+    // Featured = products with images, 1 per category
+    const featured = [];
+    const seenCat = new Set();
+    for (const p of allProducts) {
+        if (Array.isArray(p.images) && p.images.length > 0 && !seenCat.has(p.category)) {
+            featured.push(p);
+            seenCat.add(p.category);
+        }
+        if (featured.length >= 10) break;
+    }
+    // Fill remaining with any imaged products
+    if (featured.length < 10) {
+        for (const p of allProducts) {
+            if (Array.isArray(p.images) && p.images.length > 0 && !featured.includes(p)) {
+                featured.push(p);
+                if (featured.length >= 10) break;
+            }
+        }
+    }
+
+    container.innerHTML = `
+        <!-- ═══ DELIVERY BANNER ═══ -->
+        <div class="hm-delivery-bar">
+            🚗 Free delivery on orders over <b>RWF 15,000</b> in Kigali
         </div>
 
-        <!-- Store picker + Search -->
-        <div style="background:white;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,0.06)">
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-                <div style="flex:1;position:relative">
-                    <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:0.9rem">🔍</span>
-                    <input type="text" id="home-search" placeholder="Search products..." oninput="filterHomeProducts()"
-                        style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--cream-dark);border-radius:var(--radius-md);font-size:0.85rem;outline:none;background:var(--cream)">
+        <!-- ═══ STORE PICKER + SEARCH ═══ -->
+        <div class="hm-search-section">
+            <div class="hm-search-row">
+                <div class="hm-location">
+                    <span class="hm-location-icon">📍</span>
+                    <select id="store-picker" onchange="switchStore(this.value)" class="hm-store-select">
+                        ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                    </select>
+                    <span class="hm-store-hours">${store.hours}</span>
                 </div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem">
-                <span style="color:var(--slate)">📍 Shopping at:</span>
-                <select id="store-picker" onchange="switchStore(this.value)"
-                    style="border:none;background:none;font-weight:700;color:var(--coffee);font-size:0.8rem;font-family:inherit;cursor:pointer;padding:2px 0">
-                    ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                </select>
-                <span style="color:var(--light-slate);font-size:0.72rem">· ${store.hours}</span>
+            <div class="hm-search-box">
+                <span class="hm-search-icon">🔍</span>
+                <input type="text" id="home-search" placeholder="Search ${allProducts.length.toLocaleString()} products..."
+                    oninput="filterHomeProducts()" onfocus="homeShowSearch()">
             </div>
         </div>
 
-        <!-- Categories -->
-        <div style="padding:10px 12px 0;background:#f2ede5">
-            <div style="display:flex;align-items:center;gap:4px">
-                <button onclick="document.getElementById('home-categories').scrollBy({left:-150,behavior:'smooth'})" style="flex-shrink:0;background:var(--cream-dark);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center">‹</button>
-                <div class="categories-bar" id="home-categories" style="flex:1">
-                    <button class="cat-chip active" onclick="filterHomeCategory('all', this)">🛍️ All</button>
-                    ${Store.getCategories().filter(c => c.id !== 'all').map(c => `
-                        <button class="cat-chip" onclick="filterHomeCategory('${c.id}', this)">${c.emoji} ${c.name}</button>
+        <!-- ═══ SEARCH RESULTS (hidden by default) ═══ -->
+        <div id="hm-search-results" style="display:none">
+            <div style="padding:8px 16px">
+                <button class="btn btn-ghost btn-sm" onclick="homeClearSearch()" style="margin-bottom:8px">← Back to Home</button>
+                <span style="font-size:0.82rem;color:var(--slate)" id="product-count"></span>
+            </div>
+            <div style="padding:0 12px 24px">
+                <div class="product-grid" id="products-grid"></div>
+                <div id="load-more-wrap" style="display:none;text-align:center;padding:16px 0">
+                    <span style="font-size:0.78rem;color:var(--slate)" id="shown-count"></span><br>
+                    <button onclick="loadMoreProducts()" class="btn btn-primary" style="margin-top:8px;padding:10px 32px;font-size:0.85rem">View More</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ CURATED HOME (visible by default) ═══ -->
+        <div id="hm-home-content">
+
+            <!-- CATEGORY CIRCLES — Instacart style -->
+            <div class="hm-categories">
+                <div class="hm-cat-scroll">
+                    ${activeCats.map(c => {
+                        const img = _catThumb(c.id, allProducts);
+                        return `
+                        <div class="hm-cat-item" onclick="homeBrowseCategory('${c.id}')">
+                            <div class="hm-cat-circle">${img ? `<img src="${img}" alt="${c.name}">` : `<span>${c.emoji}</span>`}</div>
+                            <div class="hm-cat-name">${c.name}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- PROMO BANNER -->
+            <div class="hm-promo">
+                <div class="hm-promo-card">
+                    <div class="hm-promo-text">
+                        <div class="hm-promo-tag">Now Open</div>
+                        <div class="hm-promo-title">Shop all 3 Patel Stores online</div>
+                        <div class="hm-promo-sub">Supermarket · Grocers · Shop — browse from anywhere, pay with MTN MoMo or cash</div>
+                        <button class="btn btn-primary btn-sm" onclick="homeBrowseAll()" style="margin-top:10px">Browse All →</button>
+                    </div>
+                    <div class="hm-promo-emoji">🛒</div>
+                </div>
+            </div>
+
+            <!-- FEATURED PICKS -->
+            ${featured.length > 0 ? `
+            <div class="hm-row">
+                <div class="hm-row-header">
+                    <h3>⭐ Featured Picks</h3>
+                </div>
+                <div class="hm-scroll-track">
+                    ${featured.map(p => _scrollCard(p, selectedStoreId)).join('')}
+                </div>
+            </div>` : ''}
+
+            <!-- PER-CATEGORY ROWS -->
+            ${activeCats.map(c => {
+                const items = byCat[c.id] || [];
+                if (items.length === 0) return '';
+                const display = items.slice(0, 12);
+                return `
+                <div class="hm-row">
+                    <div class="hm-row-header">
+                        <h3>${c.emoji} ${c.name}</h3>
+                        <button class="btn btn-ghost btn-sm" onclick="homeBrowseCategory('${c.id}')" style="font-size:0.78rem;color:var(--terracotta)">
+                            See all ${items.length} →
+                        </button>
+                    </div>
+                    <div class="hm-scroll-track">
+                        ${display.map(p => _scrollCard(p, selectedStoreId)).join('')}
+                    </div>
+                </div>`;
+            }).join('')}
+
+            <!-- STORE INFO -->
+            <div class="hm-stores-section">
+                <h3>📍 Our Stores in Kigali</h3>
+                <div class="hm-stores-row">
+                    ${STORES.map(s => `
+                        <div class="hm-store-card ${s.id === selectedStoreId ? 'active' : ''}" onclick="switchStore('${s.id}')">
+                            <div class="hm-store-emoji">${s.emoji}</div>
+                            <div class="hm-store-name">${s.name}</div>
+                            <div class="hm-store-detail">📍 ${s.address.replace(', Rwanda','')}</div>
+                            <div class="hm-store-detail" style="color:var(--forest)">🕐 ${s.hours}</div>
+                            <div class="hm-store-detail">📱 ${s.phone}</div>
+                        </div>
                     `).join('')}
                 </div>
-                <button onclick="document.getElementById('home-categories').scrollBy({left:150,behavior:'smooth'})" style="flex-shrink:0;background:var(--cream-dark);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center">›</button>
-            </div>
-        </div>
-
-        </div><!-- end sticky header -->
-
-        <!-- Products Grid -->
-        <div style="padding:6px 12px 24px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-size:0.82rem;color:var(--slate)" id="product-count">${allProducts.length} products</span>
-            </div>
-            <div class="product-grid" id="products-grid">
-                ${allProducts.slice(0, 100).map(p => productCard(p, selectedStoreId)).join('')}
-            </div>
-            ${allProducts.length > 100 ? `
-                <div id="load-more-wrap" style="text-align:center;padding:16px 0">
-                    <span style="font-size:0.78rem;color:var(--slate)" id="shown-count">Showing 100 of ${allProducts.length}</span><br>
-                    <button onclick="loadMoreProducts()" class="btn btn-primary" style="margin-top:8px;padding:10px 32px;font-size:0.85rem">
-                        View More Products
-                    </button>
-                </div>
-            ` : ''}
-            ${allProducts.length === 0 ? `
-                <div class="empty-state">
-                    <div class="empty-icon">📦</div>
-                    <h3>No products yet</h3>
-                    <p>Check back soon for new arrivals at ${store.name}!</p>
-                </div>
-            ` : ''}
-        </div>
-
-        <!-- Store info cards at bottom -->
-        <div style="padding:0 12px 24px">
-            <div style="font-weight:700;font-size:0.9rem;color:var(--coffee);margin-bottom:8px">Our Stores</div>
-            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
-                ${STORES.map(s => `
-                    <div onclick="switchStore('${s.id}')" style="min-width:200px;background:white;border-radius:var(--radius-md);padding:12px;cursor:pointer;border:2px solid ${s.id === selectedStoreId ? 'var(--saffron)' : 'transparent'};flex-shrink:0">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                            <span style="font-size:1.4rem">${s.emoji}</span>
-                            <span style="font-weight:700;font-size:0.85rem;color:var(--coffee)">${s.name.replace('Patel ','')}</span>
-                        </div>
-                        <div style="font-size:0.72rem;color:var(--slate)">📍 ${s.address.replace(', Rwanda','')}</div>
-                        <div style="font-size:0.72rem;color:var(--forest)">🕐 ${s.hours}</div>
-                    </div>
-                `).join('')}
             </div>
         </div>
     `;
+}
+
+// ── Helpers for curated home ──
+function _catThumb(catId, products) {
+    const p = products.find(pr => pr.category === catId && Array.isArray(pr.images) && pr.images.length > 0);
+    return p ? p.images[0] : null;
+}
+
+function _scrollCard(product, storeId) {
+    const imgs = Array.isArray(product.images) && product.images.length > 0 ? product.images : [];
+    const imgHtml = imgs.length > 0
+        ? `<img src="${imgs[0]}" alt="${product.name}">`
+        : `<span class="hm-card-emoji">${product.emoji}</span>`;
+    const oos = product.stock === 0;
+    return `
+        <div class="hm-card" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
+            <div class="hm-card-img">
+                ${imgHtml}
+                ${oos ? '<div class="hm-card-oos">Sold Out</div>' : ''}
+            </div>
+            <div class="hm-card-body">
+                <div class="hm-card-name">${product.name}</div>
+                <div class="hm-card-price">${formatRWF(product.price)}</div>
+                <button class="hm-add-btn" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')"
+                    ${oos ? 'disabled' : ''}>
+                    ${oos ? 'Sold Out' : '+'}
+                </button>
+            </div>
+        </div>`;
+}
+
+function homeShowSearch() {
+    // If user focuses search, show search results view
+    const q = document.getElementById('home-search')?.value || '';
+    if (q.length > 0) {
+        _homeShowSearchResults();
+    }
+}
+
+function _homeShowSearchResults() {
+    document.getElementById('hm-home-content').style.display = 'none';
+    document.getElementById('hm-search-results').style.display = '';
+}
+
+function homeClearSearch() {
+    document.getElementById('home-search').value = '';
+    document.getElementById('hm-home-content').style.display = '';
+    document.getElementById('hm-search-results').style.display = 'none';
+}
+
+function homeBrowseCategory(catId) {
+    // Show search results filtered to a category
+    window._homeCategory = catId;
+    window._filteredHomeProducts = window._allHomeProducts.filter(p => p.category === catId);
+    window._loadMoreOffset = 100;
+
+    _homeShowSearchResults();
+    const cat = Store.getCategories().find(c => c.id === catId);
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = window._filteredHomeProducts.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
+    document.getElementById('product-count').textContent = `${cat ? cat.emoji + ' ' + cat.name : ''} — ${window._filteredHomeProducts.length} products`;
+
+    const wrap = document.getElementById('load-more-wrap');
+    if (window._filteredHomeProducts.length > 100) {
+        wrap.style.display = '';
+        document.getElementById('shown-count').textContent = `Showing 100 of ${window._filteredHomeProducts.length}`;
+    } else {
+        wrap.style.display = 'none';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function homeBrowseAll() {
+    window._homeCategory = 'all';
+    window._filteredHomeProducts = null;
+    window._loadMoreOffset = 100;
+
+    _homeShowSearchResults();
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = window._allHomeProducts.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
+    document.getElementById('product-count').textContent = `${window._allHomeProducts.length} products`;
+
+    const wrap = document.getElementById('load-more-wrap');
+    if (window._allHomeProducts.length > 100) {
+        wrap.style.display = '';
+        document.getElementById('shown-count').textContent = `Showing 100 of ${window._allHomeProducts.length}`;
+    } else {
+        wrap.style.display = 'none';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function switchStore(storeId) {
@@ -159,34 +310,41 @@ function filterHomeCategory(catId, btn) {
 }
 
 function filterHomeProducts() {
-    const q = document.getElementById('home-search').value.toLowerCase();
-    const catId = window._homeCategory || 'all';
+    const q = document.getElementById('home-search').value.toLowerCase().trim();
 
-    // Filter from full list by search + category
-    let filtered = window._allHomeProducts;
-    if (catId !== 'all') {
-        filtered = filtered.filter(p => p.category === catId);
+    if (!q) {
+        // Back to curated home
+        homeClearSearch();
+        return;
     }
-    if (q) {
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
-    }
+
+    // Show search results view
+    _homeShowSearchResults();
+
+    const filtered = window._allHomeProducts.filter(p => p.name.toLowerCase().includes(q));
+    window._filteredHomeProducts = filtered;
+    window._loadMoreOffset = 100;
 
     const grid = document.getElementById('products-grid');
     grid.innerHTML = filtered.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
-    document.getElementById('product-count').textContent = filtered.length + ' products';
+    document.getElementById('product-count').textContent = `${filtered.length} results for "${q}"`;
 
-    // Update or remove Load More button
     const wrap = document.getElementById('load-more-wrap');
     if (filtered.length > 100) {
-        if (wrap) {
-            document.getElementById('shown-count').textContent = `Showing 100 of ${filtered.length}`;
-            wrap.style.display = '';
-        }
+        wrap.style.display = '';
+        document.getElementById('shown-count').textContent = `Showing 100 of ${filtered.length}`;
     } else {
-        if (wrap) wrap.style.display = 'none';
+        wrap.style.display = 'none';
     }
-    window._loadMoreOffset = 100;
-    window._filteredHomeProducts = filtered;
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>No products found</h3>
+                <p>Try a different search term</p>
+            </div>`;
+    }
 }
 
 function loadMoreProducts() {
