@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Privacy Policy — Patel Stores</title>
+
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#E8A317">
+    <meta name="description" content="Privacy Policy for Patel Stores — Kigali, Rwanda">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- iOS PWA Meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Patel Stores">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --saffron: #E8A317;
+            --saffron-dark: #C48A0F;
+            --forest: #2D6A4F;
+            --forest-light: #40916C;
+            --cream: #FFF8F0;
+            --coffee: #3E2723;
+            --charcoal: #2C2C2C;
+            --slate: #64748B;
+            --light-slate: #94A3B8;
+            --white: #FFFFFF;
+            --font-display: 'DM Serif Display', serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: var(--font-body);
+            background: #f2ede5;
+            color: var(--charcoal);
+            min-height: 100vh;
+        }
+
+        /* ── NAV ── */
+        .nav {
+            background: var(--coffee);
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--saffron), var(--saffron-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--white);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .nav-name {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--white);
+            line-height: 1;
+        }
+
+        .nav-sub {
+            font-size: 10px;
+            color: var(--saffron);
+            letter-spacing: 0.5px;
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--saffron);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(232,163,23,0.3);
+            transition: background 0.2s;
+        }
+
+        .nav-back:hover { background: rgba(232,163,23,0.1); }
+
+        /* ── HERO ── */
+        .hero {
+            background: linear-gradient(135deg, var(--coffee) 0%, #5D4037 100%);
+            padding: 48px 20px 40px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(232,163,23,0.15);
+            border: 1px solid rgba(232,163,23,0.3);
+            color: var(--saffron);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(26px, 5vw, 38px);
+            color: var(--white);
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            color: rgba(255,255,255,0.65);
+            font-size: 14px;
+            max-width: 480px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+
+        .hero-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.08);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.55);
+        }
+
+        /* ── MAIN CONTENT ── */
+        .content-wrap {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 32px 16px 60px;
+        }
+
+        /* ── QUICK SUMMARY CARD ── */
+        .summary-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow-md);
+            border-left: 4px solid var(--forest);
+        }
+
+        .summary-card h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--forest);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #f8faf8;
+            border-radius: 10px;
+        }
+
+        .summary-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .summary-item strong {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--charcoal);
+            margin-bottom: 2px;
+        }
+
+        .summary-item span {
+            font-size: 11px;
+            color: var(--slate);
+            line-height: 1.4;
+        }
+
+        /* ── SECTIONS ── */
+        .section {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #f0ebe3;
+        }
+
+        .section-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .icon-saffron { background: rgba(232,163,23,0.12); }
+        .icon-forest  { background: rgba(45,106,79,0.12); }
+        .icon-terra   { background: rgba(193,81,46,0.12); }
+        .icon-blue    { background: rgba(37,99,235,0.12); }
+        .icon-slate   { background: rgba(100,116,139,0.12); }
+        .icon-green   { background: rgba(22,163,74,0.12); }
+
+        .section h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--charcoal);
+            line-height: 1.2;
+        }
+
+        .section h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--charcoal);
+            margin: 16px 0 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section p {
+            font-size: 14px;
+            color: #444;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+
+        .section p:last-child { margin-bottom: 0; }
+
+        .data-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .data-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .data-list li::before {
+            content: "→";
+            color: var(--saffron);
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .check-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .check-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .check-list li::before {
+            content: "✓";
+            color: var(--forest);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ── HIGHLIGHT BOX ── */
+        .highlight-box {
+            background: rgba(45,106,79,0.06);
+            border: 1px solid rgba(45,106,79,0.2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 14px 0;
+        }
+
+        .highlight-box p {
+            font-size: 13px;
+            color: var(--forest);
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* ── CONTACT CARD ── */
+        .contact-card {
+            background: linear-gradient(135deg, var(--coffee) 0%, #5D4037 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .contact-card h2 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            color: var(--white);
+            margin-bottom: 8px;
+        }
+
+        .contact-card p {
+            font-size: 13px;
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 16px;
+        }
+
+        .contact-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+
+        .contact-row span:first-child { font-size: 18px; }
+
+        .contact-row-text strong {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--saffron);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .contact-row-text a,
+        .contact-row-text span:last-child {
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+        }
+
+        .contact-row-text a:hover { color: var(--saffron); }
+
+        /* ── FOOTER ── */
+        .page-footer {
+            background: var(--coffee);
+            padding: 28px 20px;
+            text-align: center;
+        }
+
+        .footer-brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .page-footer p {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            line-height: 1.6;
+        }
+
+        .page-footer a {
+            color: var(--saffron);
+            text-decoration: none;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(232,163,23,0.3), transparent);
+            margin: 20px 0;
+        }
+
+        /* ── TOC ── */
+        .toc {
+            background: var(--cream);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(232,163,23,0.2);
+        }
+
+        .toc h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--slate);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .toc-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .toc-list li a {
+            font-size: 13px;
+            color: var(--forest);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 0;
+        }
+
+        .toc-list li a:hover { color: var(--saffron-dark); }
+        .toc-num { font-size: 11px; color: var(--light-slate); min-width: 18px; }
+
+        @media (max-width: 480px) {
+            .summary-grid { grid-template-columns: 1fr 1fr; }
+            .hero { padding: 36px 16px 32px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <a href="index.html" class="nav-brand">
+            <div class="logo-mark">P</div>
+            <div>
+                <div class="nav-name">Patel Stores</div>
+                <div class="nav-sub">Kigali, Rwanda</div>
+            </div>
+        </a>
+        <a href="index.html" class="nav-back">← Home</a>
+    </nav>
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-badge">Legal</div>
+        <h1>Privacy Policy</h1>
+        <p>We believe you deserve to know exactly how your data is used. This policy explains everything clearly — no legal jargon.</p>
+        <div class="hero-meta">🗓 Last updated: June 15, 2026</div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content-wrap">
+
+        <!-- QUICK SUMMARY -->
+        <div class="summary-card">
+            <h2>🔍 Quick Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-icon">📍</div>
+                    <div>
+                        <strong>Who We Are</strong>
+                        <span>Patel Stores Ltd, Kigali, Rwanda — operating 3 grocery locations</span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">📦</div>
+                    <div>
+                        <strong>What We Collect</strong>
+                        <span>Name, phone, email, delivery address, and order history only</span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">🚫</div>
+                    <div>
+                        <strong>We Never Sell Data</strong>
+                        <span>Your information is never sold or shared with advertisers</span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">🗑️</div>
+                    <div>
+                        <strong>Your Control</strong>
+                        <span>You can request deletion of your account and data anytime</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE OF CONTENTS -->
+        <div class="toc">
+            <h3>Contents</h3>
+            <ul class="toc-list">
+                <li><a href="#who-we-are"><span class="toc-num">1.</span> Who We Are</a></li>
+                <li><a href="#what-we-collect"><span class="toc-num">2.</span> Information We Collect</a></li>
+                <li><a href="#how-we-use"><span class="toc-num">3.</span> How We Use Your Information</a></li>
+                <li><a href="#sharing"><span class="toc-num">4.</span> Sharing &amp; Disclosure</a></li>
+                <li><a href="#payments"><span class="toc-num">5.</span> Payments &amp; Mobile Money</a></li>
+                <li><a href="#storage"><span class="toc-num">6.</span> Data Storage &amp; Security</a></li>
+                <li><a href="#your-rights"><span class="toc-num">7.</span> Your Rights</a></li>
+                <li><a href="#children"><span class="toc-num">8.</span> Children's Privacy</a></li>
+                <li><a href="#changes"><span class="toc-num">9.</span> Changes to This Policy</a></li>
+                <li><a href="#contact"><span class="toc-num">10.</span> Contact Us</a></li>
+            </ul>
+        </div>
+
+        <!-- 1. WHO WE ARE -->
+        <div class="section" id="who-we-are">
+            <div class="section-header">
+                <div class="section-icon icon-saffron">🏪</div>
+                <h2>1. Who We Are</h2>
+            </div>
+            <p>Patel Stores Ltd ("we", "our", or "us") operates three grocery retail locations in Kigali, Rwanda, along with an online ordering platform at <strong>patelstoresrw.com</strong> and the Patel Stores mobile application.</p>
+            <p>Our locations:</p>
+            <ul class="data-list">
+                <li><strong>Patel Supermarket</strong> — 6 KN 82 St, Kigali</li>
+                <li><strong>Patel Grocers</strong> — 46 KN 14 Ave, Kigali</li>
+                <li><strong>Patel Shop</strong> — 33GW+243, Kigali (Kicukiro)</li>
+            </ul>
+            <p style="margin-top:12px;">This Privacy Policy applies to all services provided through our website and mobile app. By using our services, you agree to the practices described in this policy.</p>
+        </div>
+
+        <!-- 2. WHAT WE COLLECT -->
+        <div class="section" id="what-we-collect">
+            <div class="section-header">
+                <div class="section-icon icon-forest">📋</div>
+                <h2>2. Information We Collect</h2>
+            </div>
+
+            <h3>Information You Give Us</h3>
+            <ul class="data-list">
+                <li><strong>Account details:</strong> your name, email address, and phone number when you register</li>
+                <li><strong>Delivery address:</strong> your physical address in Kigali for order delivery</li>
+                <li><strong>Order information:</strong> products you purchase, quantities, and order history</li>
+                <li><strong>OTP verification codes:</strong> temporary codes sent to verify your identity (never stored)</li>
+            </ul>
+
+            <h3>Information Collected Automatically</h3>
+            <ul class="data-list">
+                <li><strong>Device type:</strong> whether you're using Android, iOS, or a browser</li>
+                <li><strong>App usage:</strong> which pages you visit and how you interact with the app</li>
+                <li><strong>Error logs:</strong> technical errors that help us fix problems</li>
+            </ul>
+
+            <div class="highlight-box">
+                <p>✓ We do <strong>not</strong> collect your GPS/location, contacts, camera, microphone, or any other sensitive device data unless you explicitly grant permission for a specific feature (such as the barcode scanner for shopping).</p>
+            </div>
+        </div>
+
+        <!-- 3. HOW WE USE -->
+        <div class="section" id="how-we-use">
+            <div class="section-header">
+                <div class="section-icon icon-blue">⚙️</div>
+                <h2>3. How We Use Your Information</h2>
+            </div>
+            <p>We use your information only to provide and improve our grocery delivery service:</p>
+            <ul class="check-list">
+                <li>Process and fulfil your grocery orders</li>
+                <li>Send order confirmations and delivery updates via email or SMS</li>
+                <li>Verify your identity using OTP codes</li>
+                <li>Allow our drivers to contact you for delivery</li>
+                <li>Provide customer support when you contact us</li>
+                <li>Improve our app and fix technical issues</li>
+                <li>Send you order receipts and invoices</li>
+            </ul>
+            <p style="margin-top:14px;">We will <strong>only</strong> send you promotional messages (like offers or new products) if you have opted in. You can unsubscribe at any time.</p>
+        </div>
+
+        <!-- 4. SHARING -->
+        <div class="section" id="sharing">
+            <div class="section-header">
+                <div class="section-icon icon-terra">🤝</div>
+                <h2>4. Sharing &amp; Disclosure</h2>
+            </div>
+            <p>We do <strong>not</strong> sell, rent, or trade your personal data. We only share information in the following limited circumstances:</p>
+
+            <h3>Our Delivery Drivers</h3>
+            <p>Your name, phone number, and delivery address are shared with the assigned driver so they can deliver your order. This information is only visible during the active delivery and is not retained by the driver.</p>
+
+            <h3>Service Providers</h3>
+            <ul class="data-list">
+                <li><strong>Supabase</strong> (database hosting) — stores your account and order data securely</li>
+                <li><strong>Vercel</strong> (web hosting) — serves our website and app</li>
+                <li><strong>Email service</strong> — sends order confirmation emails on our behalf</li>
+            </ul>
+
+            <h3>Legal Requirements</h3>
+            <p>We may disclose your information if required by Rwandan law, court order, or to protect the safety and rights of our customers and staff.</p>
+
+            <div class="highlight-box">
+                <p>✓ We will never share your data with Facebook, Google, advertisers, data brokers, or any third party for marketing purposes.</p>
+            </div>
+        </div>
+
+        <!-- 5. PAYMENTS -->
+        <div class="section" id="payments">
+            <div class="section-header">
+                <div class="section-icon icon-green">💳</div>
+                <h2>5. Payments &amp; Mobile Money</h2>
+            </div>
+            <p>Patel Stores accepts payment via <strong>MTN Mobile Money</strong>, <strong>Airtel Money</strong>, and <strong>Cash on Delivery</strong>.</p>
+            <p>Payment transactions are processed directly by MTN Rwanda and Airtel Rwanda. We do <strong>not</strong> store your Mobile Money PIN, account credentials, or full transaction details. We only receive a confirmation of successful payment.</p>
+            <p>For cash on delivery, payment is handled in person by our driver and no financial data is stored digitally.</p>
+        </div>
+
+        <!-- 6. STORAGE -->
+        <div class="section" id="storage">
+            <div class="section-header">
+                <div class="section-icon icon-slate">🔒</div>
+                <h2>6. Data Storage &amp; Security</h2>
+            </div>
+            <p>Your data is stored securely using <strong>Supabase</strong>, a cloud database service. We implement the following security measures:</p>
+            <ul class="check-list">
+                <li>All data is transmitted over encrypted HTTPS connections</li>
+                <li>Passwords are hashed and never stored in plain text</li>
+                <li>OTP codes are temporary and expire within 5 minutes</li>
+                <li>Access to the admin panel is restricted to authorized Patel Stores staff only</li>
+                <li>Our database has row-level security policies restricting data access</li>
+            </ul>
+
+            <h3>How Long We Keep Your Data</h3>
+            <ul class="data-list">
+                <li><strong>Active accounts:</strong> retained as long as your account is active</li>
+                <li><strong>Order history:</strong> retained for 3 years for accounting and dispute purposes</li>
+                <li><strong>Deleted accounts:</strong> all personal data is removed within 30 days of a deletion request</li>
+            </ul>
+        </div>
+
+        <!-- 7. YOUR RIGHTS -->
+        <div class="section" id="your-rights">
+            <div class="section-header">
+                <div class="section-icon icon-saffron">⚖️</div>
+                <h2>7. Your Rights</h2>
+            </div>
+            <p>You have the following rights over your personal data:</p>
+            <ul class="check-list">
+                <li><strong>Access:</strong> request a copy of all data we hold about you</li>
+                <li><strong>Correction:</strong> ask us to correct any inaccurate information</li>
+                <li><strong>Deletion:</strong> request that we delete your account and all associated data</li>
+                <li><strong>Portability:</strong> receive your data in a readable format (CSV)</li>
+                <li><strong>Opt-out:</strong> unsubscribe from marketing messages at any time</li>
+                <li><strong>Restriction:</strong> ask us to stop processing your data in certain circumstances</li>
+            </ul>
+            <p style="margin-top:14px;">To exercise any of these rights, contact us at <a href="mailto:patelgrocersrwanda@gmail.com" style="color:var(--forest);font-weight:600;">patelgrocersrwanda@gmail.com</a>. We will respond within <strong>14 business days</strong>.</p>
+        </div>
+
+        <!-- 8. CHILDREN -->
+        <div class="section" id="children">
+            <div class="section-header">
+                <div class="section-icon icon-forest">👨‍👩‍👧</div>
+                <h2>8. Children's Privacy</h2>
+            </div>
+            <p>Patel Stores is a grocery shopping service intended for use by adults. We do not knowingly collect personal information from children under the age of 13.</p>
+            <p>If you believe a child under 13 has created an account without parental consent, please contact us immediately at <a href="mailto:patelgrocersrwanda@gmail.com" style="color:var(--forest);font-weight:600;">patelgrocersrwanda@gmail.com</a> and we will delete the account promptly.</p>
+        </div>
+
+        <!-- 9. CHANGES -->
+        <div class="section" id="changes">
+            <div class="section-header">
+                <div class="section-icon icon-blue">📝</div>
+                <h2>9. Changes to This Policy</h2>
+            </div>
+            <p>We may update this Privacy Policy from time to time to reflect changes in our services or applicable law. When we make significant changes, we will:</p>
+            <ul class="check-list">
+                <li>Update the "Last updated" date at the top of this page</li>
+                <li>Notify registered users by email if the changes are material</li>
+                <li>Display a notice in the app for 7 days after major updates</li>
+            </ul>
+            <p style="margin-top:12px;">Your continued use of Patel Stores after any changes means you accept the updated policy. We encourage you to review this page periodically.</p>
+        </div>
+
+        <!-- 10. CONTACT -->
+        <div class="contact-card" id="contact">
+            <h2>10. Contact Us</h2>
+            <p>Questions about this policy or your data? We're here to help.</p>
+            <div class="contact-methods">
+                <div class="contact-row">
+                    <span>✉️</span>
+                    <div class="contact-row-text">
+                        <strong>Email</strong>
+                        <a href="mailto:patelgrocersrwanda@gmail.com">patelgrocersrwanda@gmail.com</a>
+                    </div>
+                </div>
+                <div class="contact-row">
+                    <span>📱</span>
+                    <div class="contact-row-text">
+                        <strong>WhatsApp / Phone</strong>
+                        <span>+250 788 836 076</span>
+                    </div>
+                </div>
+                <div class="contact-row">
+                    <span>📍</span>
+                    <div class="contact-row-text">
+                        <strong>Head Office</strong>
+                        <span>Patel Supermarket, 6 KN 82 St, Kigali</span>
+                    </div>
+                </div>
+                <div class="contact-row">
+                    <span>🌐</span>
+                    <div class="contact-row-text">
+                        <strong>Website</strong>
+                        <a href="https://patelstoresrw.com">patelstoresrw.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="page-footer">
+        <div class="footer-brand-row">
+            <div class="logo-mark">P</div>
+            <div style="text-align:left">
+                <div style="font-family:'DM Serif Display',serif;font-size:16px;color:#fff">Patel Stores</div>
+                <div style="font-size:10px;color:#E8A317;">Serving Kigali since 2020</div>
+            </div>
+        </div>
+        <div class="divider"></div>
+        <p>&copy; 2026 Patel Stores Ltd. All rights reserved.</p>
+        <p style="margin-top:6px;"><a href="index.html">← Back to Store</a></p>
+    </footer>
+
+</body>
+</html>
