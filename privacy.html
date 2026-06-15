@@ -353,7 +353,6 @@
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 16px;
-            text-align: center;
         }
 
         .contact-card h2 {
@@ -361,19 +360,21 @@
             font-size: 20px;
             color: var(--white);
             margin-bottom: 8px;
+            text-align: center;
         }
 
-        .contact-card p {
+        .contact-card > p {
             font-size: 13px;
             color: rgba(255,255,255,0.65);
             margin-bottom: 16px;
+            text-align: center;
         }
 
         .contact-methods {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-width: 360px;
+            max-width: 420px;
             margin: 0 auto;
         }
 
@@ -384,17 +385,30 @@
             background: rgba(255,255,255,0.08);
             border-radius: 10px;
             padding: 12px 16px;
+            text-align: left;
         }
 
-        .contact-row span:first-child { font-size: 18px; }
+        .contact-row span:first-child {
+            font-size: 20px;
+            flex-shrink: 0;
+            width: 28px;
+            text-align: center;
+        }
+
+        .contact-row-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
 
         .contact-row-text strong {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             color: var(--saffron);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
         .contact-row-text a,
@@ -402,6 +416,7 @@
             font-size: 13px;
             color: rgba(255,255,255,0.85);
             text-decoration: none;
+            word-break: break-all;
         }
 
         .contact-row-text a:hover { color: var(--saffron); }
@@ -748,14 +763,14 @@
                     <span>📍</span>
                     <div class="contact-row-text">
                         <strong>Head Office</strong>
-                        <span>Patel Supermarket, 6 KN 82 St, Kigali</span>
+                        <span>Patel Grocers, 46 KN 14 Ave, Kigali</span>
                     </div>
                 </div>
                 <div class="contact-row">
                     <span>🌐</span>
                     <div class="contact-row-text">
                         <strong>Website</strong>
-                        <a href="https://patelstoresrw.com">patelstoresrw.com</a>
+                        <a href="https://patelstoresrw.com" style="text-align:left;">patelstoresrw.com</a>
                     </div>
                 </div>
             </div>
