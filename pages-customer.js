@@ -855,9 +855,6 @@ function renderLogin() {
                 <button class="btn btn-primary btn-full" onclick="doCustomerLogin()">Sign In</button>
                 <div class="auth-divider">or</div>
                 <button class="btn btn-outline btn-full" onclick="navigate('register')">Create an Account</button>
-                <div style="text-align:center;margin-top:var(--gap-md)">
-                    <a href="#" onclick="navigate('staff-login');return false" style="font-size:0.82rem;color:var(--slate)">Staff? Sign in here →</a>
-                </div>
             </div>
         </div>
     `;
@@ -867,6 +864,13 @@ async function doCustomerLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     if (!email || !password) return showToast('Please fill in all fields', 'error');
+    
+    // ✅ CHECK IF USER IS TRYING TO LOGIN AS ADMIN
+    if (email === 'admin' && password === 'admin123') {
+        showAdminRedirectMessage();
+        return;
+    }
+    
     try {
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) return showToast(error.message, 'error');
@@ -876,6 +880,34 @@ async function doCustomerLogin() {
         showToast('Welcome back, ' + customer.name + '!');
         navigate('home');
     } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
+}
+
+// ✅ NEW FUNCTION: SHOW ADMIN REDIRECT MESSAGE
+function showAdminRedirectMessage() {
+    const container = document.getElementById('page-container');
+    container.innerHTML = `
+        <div class="auth-page">
+            <div class="auth-card" style="text-align:center;max-width:400px">
+                <div style="font-size:3rem;margin-bottom:var(--gap-md)">👤</div>
+                <h2 style="font-size:1.3rem;color:var(--coffee)">Admin Account Detected</h2>
+                <p class="auth-sub" style="margin-bottom:var(--gap-lg)">
+                    This is an admin account. Please use the staff portal to login.
+                </p>
+                
+                <button class="btn btn-primary btn-full" onclick="window.location.href='/admin-portal.html'" style="margin-bottom:var(--gap-md)">
+                    Go to Staff Portal →
+                </button>
+                
+                <button class="btn btn-outline btn-full" onclick="navigate('login')">
+                    Back to Customer Login
+                </button>
+                
+                <div style="margin-top:var(--gap-lg);padding:var(--gap-md);background:var(--cream-light);border-radius:8px;font-size:0.85rem;color:var(--slate)">
+                    <strong>💡 Tip:</strong> Staff members should use the staff portal for admin access.
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function renderRegister() {
