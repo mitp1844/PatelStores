@@ -134,8 +134,17 @@ const Store = {
     /**
      * Add a new product to Supabase and cache.
      * If product.image is a base64 data URL, upload it to storage first.
+     * Checks for duplicate product name before adding.
      */
     async addProduct(product) {
+        // ✅ CHECK FOR DUPLICATE PRODUCT NAME
+        const productName = product.name.trim().toLowerCase();
+        const existingProduct = this._cache.products.find(p => p.name.trim().toLowerCase() === productName);
+        
+        if (existingProduct) {
+            throw new Error(`Product "${product.name}" already exists! Please use a different name.`);
+        }
+
         let imageUrl = null;
 
         // Upload image if provided as base64
