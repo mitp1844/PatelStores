@@ -618,7 +618,9 @@ function renderCheckout(storeId) {
         subtotal += p.price * ci.qty;
         return { ...ci, name: p.name, emoji: p.emoji, price: p.price };
     });
-    const delivery = 1500;
+    // ✅ FREE DELIVERY on orders over RWF 15,000
+    const FREE_DELIVERY_THRESHOLD = 15000;
+    const delivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : 1500;
     const total = subtotal + delivery;
 
     const container = document.getElementById('page-container');
@@ -703,7 +705,8 @@ function renderCheckout(storeId) {
             <div class="checkout-summary">
                 <h3>Order Summary</h3>
                 ${items.map(it => `<div class="summary-line"><span>${it.emoji} ${it.name} x${it.qty}</span><span>${formatRWF(it.price * it.qty)}</span></div>`).join('')}
-                <div class="summary-line"><span>Delivery fee</span><span>${formatRWF(delivery)}</span></div>
+                <div class="summary-line"><span>Delivery fee</span><span>${delivery === 0 ? '<b style="color:var(--forest)">FREE 🎉</b>' : formatRWF(delivery)}</span></div>
+                ${delivery === 0 ? '' : `<div style="font-size:0.75rem;color:var(--slate);padding:4px 0">💡 Add ${formatRWF(15000 - subtotal)} more for FREE delivery!</div>`}
                 <div class="summary-line total"><span>Total</span><span>${formatRWF(total)}</span></div>
             </div>
         </div>
