@@ -821,7 +821,7 @@ function renderOrderSuccess(orderId) {
     const container = document.getElementById('page-container');
     container.innerHTML = `
         <div style="text-align:center;padding:var(--gap-xl) var(--gap-md)">
-            <div style="font-size:4rem;margin-bottom:var(--gap-sm)">${isMomo ? '📱' : '🎉'}</div>
+            <div style="font-size:4rem;margin-bottom:var(--gap-sm)">🛒</div>
             <h1 style="font-size:1.5rem">Order Placed!</h1>
             <p style="color:var(--slate);font-size:0.9rem;margin:var(--gap-sm) auto;max-width:400px">
                 Your order <b>${orderId}</b> has been placed.
