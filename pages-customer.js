@@ -897,17 +897,19 @@ async function doCustomerLogin() {
     const password = document.getElementById('login-password').value;
     if (!email || !password) return showToast('Please fill in all fields', 'error');
     
-    // ✅ CHECK IF USER IS TRYING TO LOGIN AS ADMIN
-    if (email === 'admin' && password === 'admin123') {
-        showAdminRedirectMessage();
-        return;
-    }
-    
     try {
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         if (error) return showToast(error.message, 'error');
         const customer = Store.getCustomers().find(c => c.id === data.user.id);
         if (!customer) return showToast('Customer record not found.', 'error');
+        
+        // ✅ ADMIN DETECTED (by database role) → redirect to staff portal
+        if (customer.role === 'admin') {
+            await sb.auth.signOut();
+            showAdminRedirectMessage();
+            return;
+        }
+        
         Store.setCurrentUser({ ...customer, role: 'customer' });
         showToast('Welcome back, ' + customer.name + '!');
         navigate('home');
@@ -997,12 +999,12 @@ function renderStaffLogin() {
                     <button class="tab" onclick="switchStaffTab('driver',this)">Driver</button>
                 </div>
                 <div id="staff-form-admin">
-                    <div class="form-group"><label>Email</label><input type="email" class="form-input" id="staff-email" placeholder="admin@patelstores.rw"></div>
+                    <div class="form-group"><label>Email</label><input type="email" class="form-input" id="staff-email" placeholder="your@email.com"></div>
                     <div class="form-group"><label>Password</label><input type="password" class="form-input" id="staff-password" placeholder="••••••••"></div>
                     <button class="btn btn-primary btn-full" onclick="doStaffLogin('admin')">Sign In as Admin</button>
                 </div>
                 <div id="staff-form-driver" style="display:none">
-                    <div class="form-group"><label>Email</label><input type="email" class="form-input" id="driver-email" placeholder="driver@patelstores.rw"></div>
+                    <div class="form-group"><label>Email</label><input type="email" class="form-input" id="driver-email" placeholder="your@email.com"></div>
                     <div class="form-group"><label>Password</label><input type="password" class="form-input" id="driver-password" placeholder="••••••••"></div>
                     <button class="btn btn-secondary btn-full" onclick="doStaffLogin('driver')">Sign In as Driver</button>
                 </div>
