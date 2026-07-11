@@ -63,8 +63,14 @@ function orderCard(o, showActions = false) {
                         <div style="font-size:0.72rem;color:var(--light-slate)">${formatDateTime(o.created_at)}</div>
                     </div>
                 </div>
-                <div style="font-size:0.78rem;color:var(--slate);margin-bottom:${showActions ? '8px' : '0'}">
-                    ${o.items.map(it => `${it.emoji} ${it.name} ×${it.qty}`).join(' · ')}
+                <div style="background:var(--cream-light);border-radius:8px;padding:8px 10px;margin-bottom:${showActions ? '8px' : '0'}">
+                    <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:4px">Items (${o.items.reduce((s,it)=>s+it.qty,0)})</div>
+                    ${o.items.map(it => `
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;font-size:0.82rem">
+                            <span style="color:var(--coffee)">${it.emoji || '📦'} ${it.name}</span>
+                            <span style="font-weight:700;color:var(--forest);white-space:nowrap">× ${it.qty}</span>
+                        </div>
+                    `).join('')}
                 </div>
                 ${showActions ? `
                 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--cream-dark)">
@@ -231,8 +237,14 @@ function renderAdminPayments() {
                             <div style="font-size:0.72rem;color:var(--light-slate)">${formatDateTime(o.created_at)}</div>
                         </div>
                     </div>
-                    <div style="font-size:0.78rem;color:var(--slate);margin-bottom:8px">
-                        ${o.items.map(it => `${it.emoji} ${it.name} ×${it.qty}`).join(' · ')}
+                    <div style="background:var(--cream-light);border-radius:8px;padding:8px 10px;margin-bottom:8px">
+                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:4px">Items (${o.items.reduce((s,it)=>s+it.qty,0)})</div>
+                        ${o.items.map(it => `
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;font-size:0.82rem">
+                                <span style="color:var(--coffee)">${it.emoji || '📦'} ${it.name}</span>
+                                <span style="font-weight:700;color:var(--forest);white-space:nowrap">× ${it.qty}</span>
+                            </div>
+                        `).join('')}
                     </div>
                     <div style="margin-bottom:10px">
                         <div style="font-weight:600;font-size:0.78rem;margin-bottom:4px">Payment Screenshot:</div>
