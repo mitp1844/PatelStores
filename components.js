@@ -163,12 +163,12 @@ function showEmailPreview(type, data) {
             <div class="email-header">
                 <div><b>From:</b> ${store.email}</div>
                 <div><b>To:</b> ${data.customerEmail}</div>
-                <div><b>Subject:</b> Order Confirmation - ${data.orderId}</div>
+                <div><b>Subject:</b> Order Confirmation - ${data.orderId || data.id}</div>
             </div>
             <h3>Order Confirmed! 🎉</h3>
             <p style="color:#64748B;margin-bottom:16px">Hi ${data.customerName}, your order has been received.</p>
             <div style="background:white;padding:16px;border-radius:8px;margin-bottom:16px">
-                <div style="font-weight:600;margin-bottom:8px">Order #${data.orderId}</div>
+                <div style="font-weight:600;margin-bottom:8px">Order #${data.orderId || data.id}</div>
                 <div style="font-size:0.85rem;color:#64748B">Store: ${store.name}</div>
                 <div style="font-size:0.85rem;color:#64748B">Delivery: ${data.customerAddress}</div>
             </div>
@@ -185,22 +185,22 @@ function showEmailPreview(type, data) {
             <div class="email-header">
                 <div><b>From:</b> ${store.email}</div>
                 <div><b>To:</b> ${data.customerEmail}</div>
-                <div><b>Subject:</b> Order Update - ${data.orderId}</div>
+                <div><b>Subject:</b> Order Update - ${data.orderId || data.id}</div>
             </div>
             <h3>Order Status Update</h3>
             <p>Hi ${data.customerName},</p>
-            <p>Your order <b>#${data.orderId}</b> is now: <span style="background:#DCFCE7;color:#16A34A;padding:4px 12px;border-radius:20px;font-weight:600">${data.status}</span></p>
+            <p>Your order <b>#${data.orderId || data.id}</b> is now: <span style="background:#DCFCE7;color:#16A34A;padding:4px 12px;border-radius:20px;font-weight:600">${data.status}</span></p>
         `;
     } else if (type === 'delivery-confirmation') {
         content = `
             <div class="email-header">
                 <div><b>From:</b> ${store.email}</div>
                 <div><b>To:</b> ${data.customerEmail}</div>
-                <div><b>Subject:</b> Delivery Completed - ${data.orderId}</div>
+                <div><b>Subject:</b> Delivery Completed - ${data.orderId || data.id}</div>
             </div>
             <h3>Your order has been delivered! ✅</h3>
             <p>Hi ${data.customerName},</p>
-            <p>Your order <b>#${data.orderId}</b> has been delivered to:</p>
+            <p>Your order <b>#${data.orderId || data.id}</b> has been delivered to:</p>
             <p style="background:white;padding:12px;border-radius:8px;font-weight:500">📍 ${data.customerAddress}</p>
             <p style="margin-top:12px;color:#64748B">Thank you for choosing ${store.name}!</p>
         `;
