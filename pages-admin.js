@@ -49,11 +49,12 @@ function orderCard(o, showActions = false) {
     return `
         <div class="card" style="margin-bottom:8px;border-left:3px solid ${statusColor}">
             <div class="card-body" style="padding:12px">
-                <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+                <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px;margin-bottom:6px;cursor:pointer" onclick="showOrderDetail('${o.id}')" title="Click to enlarge">
                     <div>
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
                             <span style="font-weight:700;font-family:var(--font-mono);font-size:0.82rem">${o.id}</span>
                             ${statusTag(o.status)}
+                            <span style="font-size:0.7rem;color:var(--light-slate)">🔍</span>
                         </div>
                         <div style="font-size:0.78rem;color:var(--slate)">${store?.name?.replace('Patel ','') || ''}</div>
                     </div>
@@ -70,12 +71,21 @@ function orderCard(o, showActions = false) {
                 </div>
                 <div style="background:var(--cream-light);border-radius:8px;padding:8px 10px;margin-bottom:${showActions ? '8px' : '0'}">
                     <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:4px">Items (${o.items.reduce((s,it)=>s+it.qty,0)})</div>
-                    ${o.items.map(it => `
-                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;font-size:0.82rem">
-                            <span style="color:var(--coffee)">${it.emoji || '📦'} ${it.name}</span>
+                    ${o.items.map(it => {
+                        const liveProduct = Store.getProducts().find(p => p.id === it.productId);
+                        const img = it.image || liveProduct?.image || (liveProduct?.images && liveProduct.images[0]) || null;
+                        const thumb = img
+                            ? `<img src="${img}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.1rem\\'>${it.emoji || '📦'}</span>'">`
+                            : `<span style="font-size:1.1rem;width:32px;text-align:center;flex-shrink:0">${it.emoji || '📦'}</span>`;
+                        return `
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;font-size:0.82rem">
+                            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                                ${thumb}
+                                <span style="color:var(--coffee);overflow:hidden;text-overflow:ellipsis">${it.name}</span>
+                            </div>
                             <span style="font-weight:700;color:var(--forest);white-space:nowrap">× ${it.qty}</span>
-                        </div>
-                    `).join('')}
+                        </div>`;
+                    }).join('')}
                 </div>
                 ${showActions ? `
                 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--cream-dark)">
@@ -91,7 +101,7 @@ function orderCard(o, showActions = false) {
                         </select>
                     ` : ''}
                     <div style="font-size:0.75rem;color:var(--slate)">${paymentLabel(o.payment_method)}</div>
-                    <button class="btn btn-outline btn-sm" style="padding:6px 10px;font-size:0.75rem" onclick="downloadInvoice('${o.id}')">📄 Invoice</button>
+                    <button class="btn btn-outline btn-sm" style="padding:6px 10px;font-size:0.75rem" onclick="downloadInvoice('${o.id}')">📄 View Invoice</button>
                 </div>
                 ` : ''}
             </div>
@@ -184,16 +194,128 @@ function renderAdminDashboard() {
 // ═══════════════════════════════════════════
 // ORDERS
 // ═══════════════════════════════════════════
+let _orderFilter = 'all';
+
 function renderAdminOrders() {
-    const orders = Store.getOrders();
+    const allOrders = Store.getOrders();
+    const orders = _orderFilter === 'all' ? allOrders : allOrders.filter(o => o.status === _orderFilter);
+
+    // Count per status for filter badges
+    const counts = {
+        all: allOrders.length,
+        'awaiting-payment': allOrders.filter(o => o.status === 'awaiting-payment').length,
+        pending: allOrders.filter(o => o.status === 'pending').length,
+        confirmed: allOrders.filter(o => o.status === 'confirmed').length,
+        delivering: allOrders.filter(o => o.status === 'delivering').length,
+        delivered: allOrders.filter(o => o.status === 'delivered').length,
+        cancelled: allOrders.filter(o => o.status === 'cancelled').length,
+    };
+    const filters = [
+        { id: 'all', label: 'All' },
+        { id: 'awaiting-payment', label: 'Awaiting Pay' },
+        { id: 'pending', label: 'Pending' },
+        { id: 'confirmed', label: 'Confirmed' },
+        { id: 'delivering', label: 'Delivering' },
+        { id: 'delivered', label: 'Delivered' },
+        { id: 'cancelled', label: 'Cancelled' },
+    ];
+
     const content = `
         <div class="admin-header">
-            <h1 style="font-size:1.3rem">Orders (${orders.length})</h1>
+            <h1 style="font-size:1.3rem">Orders (${counts.all})</h1>
+        </div>
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;-webkit-overflow-scrolling:touch">
+            ${filters.map(f => `
+                <button onclick="setOrderFilter('${f.id}')"
+                    style="white-space:nowrap;padding:6px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;border:1px solid ${_orderFilter===f.id?'var(--forest)':'var(--cream-dark)'};background:${_orderFilter===f.id?'var(--forest)':'white'};color:${_orderFilter===f.id?'white':'var(--slate)'}">
+                    ${f.label} ${counts[f.id] > 0 ? `(${counts[f.id]})` : ''}
+                </button>
+            `).join('')}
         </div>
         ${orders.map(o => orderCard(o, true)).join('')}
-        ${orders.length === 0 ? '<div class="empty-state"><div class="empty-icon">📦</div><h3>No orders</h3></div>' : ''}
+        ${orders.length === 0 ? `<div class="empty-state"><div class="empty-icon">📦</div><h3>No ${_orderFilter === 'all' ? '' : _orderFilter.replace('-',' ')} orders</h3></div>` : ''}
     `;
     document.getElementById('page-container').innerHTML = adminShell('orders', content);
+}
+
+function setOrderFilter(status) {
+    _orderFilter = status;
+    renderAdminOrders();
+}
+
+function showOrderDetail(orderId) {
+    const o = Store.getOrders().find(ord => ord.id === orderId);
+    if (!o) return;
+    const store = STORES.find(s => s.id === o.store_id);
+    const products = Store.getProducts();
+
+    let subtotal = 0;
+    const itemsHtml = o.items.map(it => {
+        const lineTotal = it.price * it.qty;
+        subtotal += lineTotal;
+        const liveProduct = products.find(p => p.id === it.productId);
+        const img = it.image || liveProduct?.image || (liveProduct?.images && liveProduct.images[0]) || null;
+        const thumb = img
+            ? `<img src="${img}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.6rem\\'>${it.emoji || '📦'}</span>'">`
+            : `<span style="font-size:1.6rem;width:48px;text-align:center;flex-shrink:0">${it.emoji || '📦'}</span>`;
+        return `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--cream-dark)">
+                ${thumb}
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;font-size:0.88rem;color:var(--coffee)">${it.name}</div>
+                    <div style="font-size:0.78rem;color:var(--slate)">${formatRWF(it.price)} × ${it.qty}</div>
+                </div>
+                <div style="font-weight:700;color:var(--forest);white-space:nowrap">${formatRWF(lineTotal)}</div>
+            </div>`;
+    }).join('');
+    const delivery = o.total - subtotal;
+
+    const content = `
+        <div style="padding:4px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="font-weight:700;font-family:var(--font-mono);font-size:1rem">${o.id}</span>
+                ${statusTag(o.status)}
+            </div>
+            <div style="font-size:0.8rem;color:var(--slate);margin-bottom:16px">${store?.name || ''} · ${formatDateTime(o.created_at)}</div>
+
+            <div style="background:#F0F7F4;border-radius:10px;padding:12px;margin-bottom:16px">
+                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:6px">Customer</div>
+                <div style="font-size:0.95rem;font-weight:600;color:var(--coffee)">👤 ${o.customer_name || 'Guest'}</div>
+                <div style="font-size:0.85rem;color:var(--slate);margin-top:3px">📞 ${o.customer_phone || 'No phone'}</div>
+                <div style="font-size:0.85rem;color:var(--slate);margin-top:3px">📍 ${o.customer_address || 'No address'}</div>
+                ${o.customer_email ? `<div style="font-size:0.85rem;color:var(--slate);margin-top:3px">✉️ ${o.customer_email}</div>` : ''}
+            </div>
+
+            <div style="background:var(--cream-light);border-radius:10px;padding:12px;margin-bottom:16px">
+                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:6px">Items (${o.items.reduce((s,it)=>s+it.qty,0)})</div>
+                ${itemsHtml}
+                <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:0.85rem;color:var(--slate)">
+                    <span>Subtotal</span><span>${formatRWF(subtotal)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.85rem;color:var(--slate)">
+                    <span>Delivery</span><span>${delivery === 0 ? 'FREE' : formatRWF(delivery)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-weight:800;font-size:1.05rem;color:var(--forest);border-top:1px solid var(--cream-dark);margin-top:4px">
+                    <span>Total</span><span>${formatRWF(o.total)}</span>
+                </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <span style="font-size:0.85rem;color:var(--slate)">Payment</span>
+                <span style="font-size:0.85rem;font-weight:600">${paymentLabel(o.payment_method)} ${o.payment_verified ? '✓' : ''}</span>
+            </div>
+
+            ${o.payment_proof ? `
+            <div style="margin-bottom:16px">
+                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:6px">Payment Screenshot</div>
+                <img src="${o.payment_proof}" style="max-width:100%;border-radius:10px;border:1px solid var(--cream-dark);cursor:pointer" onclick="window.open(this.src,'_blank')">
+            </div>` : ''}
+
+            <button class="btn btn-primary btn-full" onclick="downloadInvoice('${o.id}')">📄 View Invoice</button>
+        </div>
+    `;
+    document.getElementById('order-detail-content').innerHTML = content;
+    document.getElementById('order-detail-modal').style.display = 'flex';
 }
 
 async function changeOrderStatus(orderId, status) {
