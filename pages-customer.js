@@ -4,8 +4,8 @@ const STORE_MOMO_CODES = {
     'shop': '051368'
 };
 
-// Track selected store globally — default to supermarket
-let selectedStoreId = localStorage.getItem('patel-selected-store') || 'supermarket';
+// Track selected store globally — default to grocers
+let selectedStoreId = localStorage.getItem('patel-selected-store') || 'grocers';
 
 function setSelectedStore(storeId) {
     selectedStoreId = storeId;
@@ -742,48 +742,77 @@ function clearPaymentProof() {
 }
 
 async function placeOrder(storeId, total) {
-    const user = Store.getCurrentUser();
-    const isGuest = !user || user.role !== 'customer';
-    const address = document.getElementById('checkout-address').value.trim();
-    const phone = document.getElementById('checkout-phone').value.trim();
-    const email = document.getElementById('checkout-email').value.trim();
+    try {
+        const user = Store.getCurrentUser();
+        const isGuest = !user || user.role !== 'customer';
+        const address = document.getElementById('checkout-address').value.trim();
+        const phone = document.getElementById('checkout-phone').value.trim();
+        const email = document.getElementById('checkout-email').value.trim();
 
-    if (isGuest) {
-        const name = document.getElementById('checkout-name').value.trim();
-        if (!name) return showToast('Please enter your name', 'error');
-        if (!phone) return showToast('Please enter your phone number', 'error');
-        if (!address) return showToast('Please enter a delivery address', 'error');
-    } else {
-        if (!address) return showToast('Please enter a delivery address', 'error');
+        // ✅ VALIDATION
+        if (isGuest) {
+            const name = document.getElementById('checkout-name').value.trim();
+            if (!name) return showToast('Please enter your name', 'error');
+            if (!phone) return showToast('Please enter your phone number', 'error');
+            if (!address) return showToast('Please enter a delivery address', 'error');
+        } else {
+            if (!phone) return showToast('Please enter your phone number', 'error');
+            if (!address) return showToast('Please enter a delivery address', 'error');
+        }
+        
+        if (selectedPayment !== 'cod' && !paymentProofData) {
+            return showToast('Please upload your payment screenshot', 'error');
+        }
+
+        const cart = Store.getCart(storeId);
+        if (!cart || cart.length === 0) return showToast('Your cart is empty', 'error');
+
+        const products = Store.getProducts();
+        const items = cart.map(ci => {
+            const p = products.find(pr => pr.id === ci.productId);
+            if (!p) throw new Error('Product not found: ' + ci.productId);
+            return { productId: ci.productId, name: p.name, emoji: p.emoji, price: p.price, qty: ci.qty };
+        });
+        
+        const orderId = 'ORD-' + String(2000 + Math.floor(Math.random() * 8000));
+        const store = STORES.find(s => s.id === storeId);
+        if (!store) throw new Error('Store not found');
+        
+        const customerName = isGuest ? document.getElementById('checkout-name').value.trim() : user.name;
+
+        const order = {
+            id: orderId, 
+            customerId: isGuest ? null : user.id, 
+            customerName, 
+            customerEmail: email,
+            customerPhone: phone, 
+            customerAddress: address, 
+            storeId, 
+            storeName: store.name,
+            items, 
+            total, 
+            paymentMethod: selectedPayment,
+            paymentProof: selectedPayment !== 'cod' ? paymentProofData : null,
+            paymentVerified: selectedPayment === 'cod', 
+            status: selectedPayment === 'cod' ? 'pending' : 'awaiting-payment',
+            driverId: null,
+            created_at: new Date().toISOString()
+        };
+        
+        // ✅ ADD ORDER WITH ERROR HANDLING
+        await Store.addOrder(order);
+        if (!order) throw new Error('Failed to create order');
+        
+        Store.clearCart(storeId);
+        paymentProofData = null;
+        selectedPayment = 'mtn'; // Reset to default
+        updateNav();
+        showEmailPreview('order-confirmation', order);
+        setTimeout(() => navigate('order-success', { orderId }), 500);
+    } catch (err) {
+        console.error('Order error:', err);
+        showToast('Failed to place order: ' + err.message, 'error');
     }
-    if (selectedPayment !== 'cod' && !paymentProofData) {
-        return showToast('Please upload your payment screenshot', 'error');
-    }
-
-    const cart = Store.getCart(storeId);
-    const products = Store.getProducts();
-    const items = cart.map(ci => {
-        const p = products.find(pr => pr.id === ci.productId);
-        return { productId: ci.productId, name: p.name, emoji: p.emoji, price: p.price, qty: ci.qty };
-    });
-    const orderId = 'ORD-' + String(2000 + Math.floor(Math.random() * 8000));
-    const store = STORES.find(s => s.id === storeId);
-    const customerName = isGuest ? document.getElementById('checkout-name').value.trim() : user.name;
-
-    const order = {
-        id: orderId, customerId: isGuest ? null : user.id, customerName, customerEmail: email,
-        customerPhone: phone, customerAddress: address, storeId, storeName: store.name,
-        items, total, paymentMethod: selectedPayment,
-        paymentProof: selectedPayment !== 'cod' ? paymentProofData : null,
-        paymentVerified: selectedPayment === 'cod', status: selectedPayment === 'cod' ? 'pending' : 'awaiting-payment',
-        driverId: null
-    };
-    await Store.addOrder(order);
-    Store.clearCart(storeId);
-    paymentProofData = null;
-    updateNav();
-    showEmailPreview('order-confirmation', order);
-    setTimeout(() => navigate('order-success', { orderId }), 500);
 }
 
 function renderOrderSuccess(orderId) {
