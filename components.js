@@ -250,7 +250,7 @@ async function _getLogoDataUrl() {
     }
 }
 
-async function downloadInvoice(orderId) {
+async function viewInvoice(orderId) {
     const order = Store.getOrders().find(o => o.id === orderId);
     if (!order) { showToast('Order not found', 'error'); return; }
     if (!window.jspdf) { showToast('PDF library still loading, try again', 'error'); return; }
@@ -421,6 +421,46 @@ async function downloadInvoice(orderId) {
     doc.text('Questions? Contact us at ' + store.phone + '  |  patelstoresrw.com', pageW / 2, footerY + 5, { align: 'center' });
 
     // Save
-    doc.save('Invoice-' + order.id + '.pdf');
+    // Instead of saving directly, show a preview the user can view then download
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const fileName = 'Invoice-' + order.id + '.pdf';
+
+    const content = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+                <div style="font-weight:700;font-size:1rem;color:var(--coffee)">Invoice ${order.id}</div>
+                <div style="font-size:0.8rem;color:var(--slate)">${order.customer_name || 'Guest'} · ${formatRWF(order.total)}</div>
+            </div>
+            <button class="btn btn-primary" onclick="_saveInvoicePdf('${pdfUrl}','${fileName}')">⬇ Download PDF</button>
+        </div>
+        <iframe src="${pdfUrl}" style="width:100%;height:60vh;border:1px solid var(--cream-dark);border-radius:8px" title="Invoice preview"></iframe>
+    `;
+    document.getElementById('invoice-preview-content').innerHTML = content;
+    document.getElementById('invoice-modal').style.display = 'flex';
+}
+
+// Trigger the actual file download from the preview
+function _saveInvoicePdf(url, fileName) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     showToast('Invoice downloaded!', 'success');
+}
+
+// Backward-compatible alias (older buttons may call downloadInvoice)
+const downloadInvoice = viewInvoice;
+
+// Close invoice modal and free the blob URL
+function _closeInvoiceModal() {
+    const modal = document.getElementById('invoice-modal');
+    const iframe = modal.querySelector('iframe');
+    if (iframe && iframe.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(iframe.src); } catch (e) {}
+    }
+    modal.style.display = 'none';
+    document.getElementById('invoice-preview-content').innerHTML = '';
 }
