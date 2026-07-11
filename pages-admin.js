@@ -91,6 +91,7 @@ function orderCard(o, showActions = false) {
                         </select>
                     ` : ''}
                     <div style="font-size:0.75rem;color:var(--slate)">${paymentLabel(o.payment_method)}</div>
+                    <button class="btn btn-outline btn-sm" style="padding:6px 10px;font-size:0.75rem" onclick="downloadInvoice('${o.id}')">📄 Invoice</button>
                 </div>
                 ` : ''}
             </div>
