@@ -225,3 +225,202 @@ function paymentLabel(method) {
     const labels = { mtn: '📱 MTN MoMo', cod: '💵 Cash on Delivery' };
     return labels[method] || method;
 }
+
+// ═══════════════════════════════════════════
+// PDF INVOICE GENERATOR
+// ═══════════════════════════════════════════
+
+// Cache the logo as base64 so we only fetch it once
+let _logoDataUrl = null;
+async function _getLogoDataUrl() {
+    if (_logoDataUrl) return _logoDataUrl;
+    try {
+        const res = await fetch('icons/icon-512x512.png');
+        const blob = await res.blob();
+        _logoDataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+        return _logoDataUrl;
+    } catch (e) {
+        console.warn('Logo load failed, using fallback', e);
+        return null;
+    }
+}
+
+async function downloadInvoice(orderId) {
+    const order = Store.getOrders().find(o => o.id === orderId);
+    if (!order) { showToast('Order not found', 'error'); return; }
+    if (!window.jspdf) { showToast('PDF library still loading, try again', 'error'); return; }
+
+    const store = STORES.find(s => s.id === order.store_id) || STORES[0];
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210;
+    const margin = 15;
+
+    // ── Brand colors ──
+    const forest = [45, 106, 79];
+    const coffee = [61, 47, 38];
+    const slate = [100, 116, 139];
+    const cream = [247, 243, 237];
+
+    // ── HEADER BAR ──
+    doc.setFillColor(...forest);
+    doc.rect(0, 0, pageW, 38, 'F');
+
+    // Real logo (white rounded tile behind it for contrast)
+    const logo = await _getLogoDataUrl();
+    if (logo) {
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin, 8, 22, 22, 3, 3, 'F');
+        try { doc.addImage(logo, 'PNG', margin + 2, 10, 18, 18); } catch (e) { /* ignore */ }
+    } else {
+        // Fallback: drawn "P" circle
+        doc.setFillColor(255, 255, 255);
+        doc.circle(margin + 8, 19, 8, 'F');
+        doc.setTextColor(...forest);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('P', margin + 8, 23, { align: 'center' });
+    }
+
+    // Store name + tagline
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('Patel Stores', margin + 26, 17);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Fresh groceries delivered in Kigali', margin + 26, 24);
+
+    // INVOICE label (right)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('INVOICE', pageW - margin, 20, { align: 'right' });
+
+    // ── STORE + INVOICE META ──
+    let y = 50;
+    doc.setTextColor(...coffee);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(store.name, margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...slate);
+    doc.text(store.address, margin, y + 5);
+    doc.text('Tel: ' + store.phone, margin, y + 10);
+    doc.text('Email: ' + store.email, margin, y + 15);
+
+    // Invoice details (right side)
+    doc.setTextColor(...coffee);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('Invoice #:', pageW - margin - 45, y);
+    doc.text('Date:', pageW - margin - 45, y + 5);
+    doc.text('Status:', pageW - margin - 45, y + 10);
+    doc.text('Payment:', pageW - margin - 45, y + 15);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...slate);
+    doc.text(String(order.id), pageW - margin, y, { align: 'right' });
+    doc.text(formatDateTime(order.created_at), pageW - margin, y + 5, { align: 'right' });
+    doc.text(String(order.status || 'pending').toUpperCase(), pageW - margin, y + 10, { align: 'right' });
+    const payLabel = order.payment_method === 'cod' ? 'Cash on Delivery' : 'MTN Mobile Money';
+    doc.text(payLabel, pageW - margin, y + 15, { align: 'right' });
+
+    // ── BILL TO ──
+    y = 78;
+    doc.setFillColor(...cream);
+    doc.rect(margin, y, pageW - margin * 2, 24, 'F');
+    doc.setTextColor(...forest);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('BILL TO', margin + 4, y + 6);
+    doc.setTextColor(...coffee);
+    doc.setFontSize(10);
+    doc.text(order.customer_name || 'Guest', margin + 4, y + 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...slate);
+    doc.text('Phone: ' + (order.customer_phone || 'N/A'), margin + 4, y + 17);
+    doc.text('Address: ' + (order.customer_address || 'N/A'), margin + 4, y + 22);
+
+    // ── ITEMS TABLE ──
+    y = 112;
+    // Table header
+    doc.setFillColor(...forest);
+    doc.rect(margin, y, pageW - margin * 2, 9, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('ITEM', margin + 3, y + 6);
+    doc.text('QTY', pageW - margin - 60, y + 6, { align: 'center' });
+    doc.text('PRICE', pageW - margin - 35, y + 6, { align: 'right' });
+    doc.text('TOTAL', pageW - margin - 3, y + 6, { align: 'right' });
+
+    // Table rows
+    y += 9;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...coffee);
+    doc.setFontSize(9);
+    let subtotal = 0;
+    (order.items || []).forEach((it, i) => {
+        const lineTotal = it.price * it.qty;
+        subtotal += lineTotal;
+        if (i % 2 === 0) {
+            doc.setFillColor(250, 248, 245);
+            doc.rect(margin, y, pageW - margin * 2, 8, 'F');
+        }
+        // Truncate long names
+        let name = it.name || '';
+        if (name.length > 45) name = name.substring(0, 43) + '..';
+        doc.text(name, margin + 3, y + 5.5);
+        doc.text(String(it.qty), pageW - margin - 60, y + 5.5, { align: 'center' });
+        doc.text(formatRWF(it.price), pageW - margin - 35, y + 5.5, { align: 'right' });
+        doc.text(formatRWF(lineTotal), pageW - margin - 3, y + 5.5, { align: 'right' });
+        y += 8;
+    });
+
+    // ── TOTALS ──
+    y += 4;
+    const delivery = order.total - subtotal;
+    doc.setDrawColor(...slate);
+    doc.setLineWidth(0.2);
+    doc.line(pageW - margin - 70, y, pageW - margin, y);
+    y += 6;
+    doc.setFontSize(9);
+    doc.setTextColor(...slate);
+    doc.text('Subtotal:', pageW - margin - 70, y);
+    doc.text(formatRWF(subtotal), pageW - margin - 3, y, { align: 'right' });
+    y += 6;
+    doc.text('Delivery Fee:', pageW - margin - 70, y);
+    doc.text(delivery === 0 ? 'FREE' : formatRWF(delivery), pageW - margin - 3, y, { align: 'right' });
+    y += 8;
+    // Grand total box
+    doc.setFillColor(...forest);
+    doc.rect(pageW - margin - 73, y - 5, 73, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('TOTAL:', pageW - margin - 70, y + 1.5);
+    doc.text(formatRWF(order.total), pageW - margin - 3, y + 1.5, { align: 'right' });
+
+    // ── FOOTER ──
+    const footerY = 275;
+    doc.setDrawColor(...cream);
+    doc.setLineWidth(0.5);
+    doc.line(margin, footerY - 6, pageW - margin, footerY - 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...forest);
+    doc.text('Thank you for shopping with Patel Stores!', pageW / 2, footerY, { align: 'center' });
+    doc.setFontSize(7.5);
+    doc.setTextColor(...slate);
+    doc.text('Questions? Contact us at ' + store.phone + '  |  patelstoresrw.com', pageW / 2, footerY + 5, { align: 'center' });
+
+    // Save
+    doc.save('Invoice-' + order.id + '.pdf');
+    showToast('Invoice downloaded!', 'success');
+}
