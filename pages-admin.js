@@ -55,13 +55,18 @@ function orderCard(o, showActions = false) {
                             <span style="font-weight:700;font-family:var(--font-mono);font-size:0.82rem">${o.id}</span>
                             ${statusTag(o.status)}
                         </div>
-                        <div style="font-weight:600;font-size:0.9rem">${o.customer_name || 'Guest'}</div>
-                        <div style="font-size:0.78rem;color:var(--slate)">${o.customer_phone || ''} · ${store?.name?.replace('Patel ','') || ''}</div>
+                        <div style="font-size:0.78rem;color:var(--slate)">${store?.name?.replace('Patel ','') || ''}</div>
                     </div>
                     <div style="text-align:right">
                         <div style="font-weight:800;color:var(--forest);font-size:1rem">${formatRWF(o.total)}</div>
                         <div style="font-size:0.72rem;color:var(--light-slate)">${formatDateTime(o.created_at)}</div>
                     </div>
+                </div>
+                <div style="background:#F0F7F4;border-radius:8px;padding:8px 10px;margin-bottom:8px">
+                    <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:4px">Customer</div>
+                    <div style="font-size:0.85rem;font-weight:600;color:var(--coffee)">👤 ${o.customer_name || 'Guest'}</div>
+                    <div style="font-size:0.8rem;color:var(--slate);margin-top:2px">📞 ${o.customer_phone || 'No phone'}</div>
+                    <div style="font-size:0.8rem;color:var(--slate);margin-top:2px">📍 ${o.customer_address || 'No address'}</div>
                 </div>
                 <div style="background:var(--cream-light);border-radius:8px;padding:8px 10px;margin-bottom:${showActions ? '8px' : '0'}">
                     <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:4px">Items (${o.items.reduce((s,it)=>s+it.qty,0)})</div>
