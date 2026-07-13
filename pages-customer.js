@@ -717,11 +717,32 @@ function renderCheckout(storeId) {
                 </button>
             </div>
             <div class="checkout-summary">
-                <h3>Order Summary</h3>
-                ${items.map(it => `<div class="summary-line"><span>${it.emoji} ${it.name} x${it.qty}</span><span>${formatRWF(it.price * it.qty)}</span></div>`).join('')}
-                <div class="summary-line"><span>Delivery fee</span><span>${delivery === 0 ? '<b style="color:var(--forest)">FREE 🎉</b>' : formatRWF(delivery)}</span></div>
-                ${delivery === 0 ? '' : `<div style="font-size:0.75rem;color:var(--slate);padding:4px 0">💡 Add ${formatRWF(15000 - subtotal)} more for FREE delivery!</div>`}
-                <div class="summary-line total"><span>Total</span><span>${formatRWF(total)}</span></div>
+                <h3 style="margin-bottom:12px">Order Summary</h3>
+                ${items.map(it => `
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--cream-dark)">
+                        <div style="display:flex;gap:10px;align-items:flex-start;min-width:0">
+                            <span style="background:var(--forest);color:white;font-size:0.72rem;font-weight:700;min-width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${it.qty}×</span>
+                            <div style="min-width:0">
+                                <div style="font-size:0.88rem;color:var(--coffee);font-weight:500;line-height:1.3">${it.name}</div>
+                                <div style="font-size:0.75rem;color:var(--light-slate);margin-top:1px">${formatRWF(it.price)} each</div>
+                            </div>
+                        </div>
+                        <div style="font-weight:600;color:var(--coffee);white-space:nowrap;font-size:0.88rem">${formatRWF(it.price * it.qty)}</div>
+                    </div>
+                `).join('')}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 4px">
+                    <span style="color:var(--slate);font-size:0.88rem">Subtotal</span>
+                    <span style="color:var(--coffee);font-size:0.88rem">${formatRWF(subtotal)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+                    <span style="color:var(--slate);font-size:0.88rem">Delivery fee</span>
+                    <span style="font-size:0.88rem">${delivery === 0 ? '<b style="color:var(--forest)">FREE</b>' : formatRWF(delivery)}</span>
+                </div>
+                ${delivery === 0 ? '' : `<div style="font-size:0.75rem;color:var(--forest);background:var(--cream-light);border-radius:6px;padding:6px 8px;margin:4px 0">Add ${formatRWF(15000 - subtotal)} more to get FREE delivery</div>`}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;margin-top:6px;border-top:2px solid var(--cream-dark)">
+                    <span style="font-weight:700;font-size:1.05rem;color:var(--coffee)">Total</span>
+                    <span style="font-weight:800;font-size:1.15rem;color:var(--forest)">${formatRWF(total)}</span>
+                </div>
             </div>
         </div>
     `;
