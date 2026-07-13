@@ -306,6 +306,8 @@ const Store = {
             customer_email: order.customerEmail || null,
             customer_phone: order.customerPhone || null,
             customer_address: order.customerAddress || null,
+            business_name: order.businessName || null,
+            tin_number: order.tinNumber || null,
             store_id: order.storeId,
             items: order.items,            // JSONB
             total: order.total,
