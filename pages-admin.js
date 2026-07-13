@@ -66,6 +66,8 @@ function orderCard(o, showActions = false) {
                 <div style="background:#F0F7F4;border-radius:8px;padding:8px 10px;margin-bottom:8px">
                     <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:4px">Customer</div>
                     <div style="font-size:0.85rem;font-weight:600;color:var(--coffee)">👤 ${o.customer_name || 'Guest'}</div>
+                    ${o.business_name ? `<div style="font-size:0.8rem;color:var(--coffee);margin-top:2px">🏢 ${o.business_name}</div>` : ''}
+                    ${o.tin_number ? `<div style="font-size:0.8rem;color:var(--slate);margin-top:2px">🧾 TIN: ${o.tin_number}</div>` : ''}
                     <div style="font-size:0.8rem;color:var(--slate);margin-top:2px">📞 ${o.customer_phone || 'No phone'}</div>
                     <div style="font-size:0.8rem;color:var(--slate);margin-top:2px">📍 ${o.customer_address || 'No address'}</div>
                 </div>
@@ -281,6 +283,8 @@ function showOrderDetail(orderId) {
             <div style="background:#F0F7F4;border-radius:10px;padding:12px;margin-bottom:16px">
                 <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--light-slate);margin-bottom:6px">Customer</div>
                 <div style="font-size:0.95rem;font-weight:600;color:var(--coffee)">👤 ${o.customer_name || 'Guest'}</div>
+                ${o.business_name ? `<div style="font-size:0.85rem;color:var(--coffee);margin-top:3px">🏢 ${o.business_name}</div>` : ''}
+                ${o.tin_number ? `<div style="font-size:0.85rem;color:var(--slate);margin-top:3px">🧾 TIN: ${o.tin_number}</div>` : ''}
                 <div style="font-size:0.85rem;color:var(--slate);margin-top:3px">📞 ${o.customer_phone || 'No phone'}</div>
                 <div style="font-size:0.85rem;color:var(--slate);margin-top:3px">📍 ${o.customer_address || 'No address'}</div>
                 ${o.customer_email ? `<div style="font-size:0.85rem;color:var(--slate);margin-top:3px">✉️ ${o.customer_email}</div>` : ''}
