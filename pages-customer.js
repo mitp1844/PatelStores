@@ -657,6 +657,20 @@ function renderCheckout(storeId) {
 
                 <div class="card" style="margin-bottom:var(--gap-md)">
                     <div class="card-body">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;font-weight:600">
+                            <input type="checkbox" id="business-toggle" onchange="toggleBusinessFields()" style="width:16px;height:16px">
+                            🏢 Ordering for a business? (for TIN invoice)
+                        </label>
+                        <div id="business-fields" style="display:none;margin-top:12px">
+                            <div class="form-group"><label>Business Name</label><input type="text" class="form-input" id="checkout-business-name" placeholder="Company / business name"></div>
+                            <div class="form-group"><label>TIN Number</label><input type="text" class="form-input" id="checkout-tin" placeholder="Tax Identification Number"></div>
+                            <p style="font-size:0.75rem;color:var(--slate);margin-top:2px">These will appear on your invoice for tax purposes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:var(--gap-md)">
+                    <div class="card-body">
                         <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:10px;font-size:0.95rem">Payment Method</h3>
                         <div class="payment-options">
                             <label class="payment-option selected" onclick="selectPayment(this,'mtn')">
@@ -716,6 +730,11 @@ function renderCheckout(storeId) {
 let selectedPayment = 'mtn';
 let paymentProofData = null;
 
+function toggleBusinessFields() {
+    const checked = document.getElementById('business-toggle').checked;
+    document.getElementById('business-fields').style.display = checked ? 'block' : 'none';
+}
+
 function selectPayment(el, method) {
     selectedPayment = method;
     document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
@@ -774,7 +793,7 @@ async function placeOrder(storeId, total) {
         const items = cart.map(ci => {
             const p = products.find(pr => pr.id === ci.productId);
             if (!p) throw new Error('Product not found: ' + ci.productId);
-            return { productId: ci.productId, name: p.name, emoji: p.emoji, price: p.price, qty: ci.qty };
+            return { productId: ci.productId, name: p.name, emoji: p.emoji, price: p.price, qty: ci.qty, image: p.image || (p.images && p.images[0]) || null };
         });
         
         const orderId = 'ORD-' + String(2000 + Math.floor(Math.random() * 8000));
@@ -783,6 +802,12 @@ async function placeOrder(storeId, total) {
         
         const customerName = isGuest ? document.getElementById('checkout-name').value.trim() : user.name;
 
+        // ✅ Business / TIN fields (optional)
+        const businessToggle = document.getElementById('business-toggle');
+        const isBusiness = businessToggle && businessToggle.checked;
+        const businessName = isBusiness ? (document.getElementById('checkout-business-name').value.trim() || null) : null;
+        const tinNumber = isBusiness ? (document.getElementById('checkout-tin').value.trim() || null) : null;
+
         const order = {
             id: orderId, 
             customerId: isGuest ? null : user.id, 
@@ -790,6 +815,8 @@ async function placeOrder(storeId, total) {
             customerEmail: email,
             customerPhone: phone, 
             customerAddress: address, 
+            businessName,
+            tinNumber,
             storeId, 
             storeName: store.name,
             items, 
