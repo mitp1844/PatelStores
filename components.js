@@ -332,23 +332,52 @@ async function viewInvoice(orderId) {
 
     // ── BILL TO ──
     y = 78;
+    const hasBusiness = order.business_name || order.tin_number;
+    const billBoxH = hasBusiness ? 34 : 24;
     doc.setFillColor(...cream);
-    doc.rect(margin, y, pageW - margin * 2, 24, 'F');
+    doc.rect(margin, y, pageW - margin * 2, billBoxH, 'F');
     doc.setTextColor(...forest);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.text('BILL TO', margin + 4, y + 6);
     doc.setTextColor(...coffee);
     doc.setFontSize(10);
-    doc.text(order.customer_name || 'Guest', margin + 4, y + 12);
-    doc.setFont('helvetica', 'normal');
+    let by = y + 12;
+    // Business name shown prominently if present, else customer name
+    if (order.business_name) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(order.business_name, margin + 4, by);
+        by += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...slate);
+        doc.text('Attn: ' + (order.customer_name || 'Guest'), margin + 4, by);
+        by += 5;
+    } else {
+        doc.text(order.customer_name || 'Guest', margin + 4, by);
+        by += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...slate);
+    }
+    if (order.tin_number) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...coffee);
+        doc.text('TIN: ' + order.tin_number, margin + 4, by);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...slate);
+        by += 5;
+    }
     doc.setFontSize(9);
     doc.setTextColor(...slate);
-    doc.text('Phone: ' + (order.customer_phone || 'N/A'), margin + 4, y + 17);
-    doc.text('Address: ' + (order.customer_address || 'N/A'), margin + 4, y + 22);
+    doc.text('Phone: ' + (order.customer_phone || 'N/A'), margin + 4, by);
+    by += 5;
+    doc.text('Address: ' + (order.customer_address || 'N/A'), margin + 4, by);
 
     // ── ITEMS TABLE ──
-    y = 112;
+    // Shift table down if business box is taller
+    const tableShift = hasBusiness ? 10 : 0;
+    y = 112 + tableShift;
     // Table header
     doc.setFillColor(...forest);
     doc.rect(margin, y, pageW - margin * 2, 9, 'F');
