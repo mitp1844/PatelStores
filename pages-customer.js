@@ -64,138 +64,106 @@ function renderHome() {
     }
 
     container.innerHTML = `
-        <!-- ═══ DELIVERY BANNER ═══ -->
-        <div class="hm-delivery-bar">
-            🚗 Free delivery on orders over <b>RWF 15,000</b> in Kigali
-        </div>
-
-        <!-- ═══ STORE PICKER + SEARCH ═══ -->
-        <div class="hm-search-section">
-            <div class="hm-search-row">
-                <div class="hm-location">
-                    <span class="hm-location-icon">📍</span>
-                    <select id="store-picker" onchange="switchStore(this.value)" class="hm-store-select">
-                        ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                    </select>
-                    <span class="hm-store-hours">${store.hours}</span>
+        <!-- ═══ IMMERSIVE HERO ═══ -->
+        <div class="mk-hero">
+            <div class="mk-hero-top">
+                <div class="mk-hero-brand">
+                    <h1>Patel Stores</h1>
+                    <div class="mk-hero-loc">
+                        <span class="mk-loc-pin">📍</span>
+                        <select id="store-picker" onchange="switchStore(this.value)" class="mk-store-select">
+                            ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="mk-hero-search-btn" onclick="document.getElementById('home-search').focus()">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                 </div>
             </div>
-            <div class="hm-search-box">
-                <span class="hm-search-icon">🔍</span>
+            <div class="mk-hero-copy">
+                <div class="mk-hero-eyebrow">Fresh today · ${store.hours}</div>
+                <h2>Groceries delivered from your neighbourhood</h2>
+                <button class="mk-hero-cta" onclick="homeBrowseAll()">
+                    Shop now
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══ CONTENT SHEET ═══ -->
+        <div class="mk-sheet">
+
+            <!-- SEARCH BOX -->
+            <div class="mk-search-box">
+                <span class="mk-search-icon">🔍</span>
                 <input type="text" id="home-search" placeholder="Search ${allProducts.length.toLocaleString()} products..."
                     oninput="filterHomeProducts()" onfocus="homeShowSearch()">
             </div>
-        </div>
 
-        <!-- ═══ SEARCH RESULTS (hidden by default) ═══ -->
-        <div id="hm-search-results" style="display:none">
-            <div style="padding:8px 16px">
-                <button class="btn btn-ghost btn-sm" onclick="homeClearSearch()" style="margin-bottom:8px">← Back to Home</button>
-                <span style="font-size:0.82rem;color:var(--slate)" id="product-count"></span>
-            </div>
-            <div style="padding:0 12px 24px">
-                <div class="product-grid" id="products-grid"></div>
-                <div id="load-more-wrap" style="display:none;text-align:center;padding:16px 0">
-                    <span style="font-size:0.78rem;color:var(--slate)" id="shown-count"></span><br>
-                    <button onclick="loadMoreProducts()" class="btn btn-primary" style="margin-top:8px;padding:10px 32px;font-size:0.85rem">View More</button>
+            <!-- SEARCH RESULTS (hidden by default) -->
+            <div id="hm-search-results" style="display:none">
+                <div style="padding:8px 4px">
+                    <button class="btn btn-ghost btn-sm" onclick="homeClearSearch()" style="margin-bottom:8px">← Back to Home</button>
+                    <span style="font-size:0.82rem;color:var(--slate)" id="product-count"></span>
+                </div>
+                <div style="padding:0 0 24px">
+                    <div class="product-grid" id="products-grid"></div>
+                    <div id="load-more-wrap" style="display:none;text-align:center;padding:16px 0">
+                        <span style="font-size:0.78rem;color:var(--slate)" id="shown-count"></span><br>
+                        <button onclick="loadMoreProducts()" class="btn btn-primary" style="margin-top:8px;padding:10px 32px;font-size:0.85rem">View More</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- ═══ CURATED HOME (visible by default) ═══ -->
-        <div id="hm-home-content">
+            <!-- CURATED HOME (visible by default) -->
+            <div id="hm-home-content">
 
-            <!-- CATEGORY CIRCLES — auto-scrolling showcase -->
-            <div class="hm-categories">
-                <div class="hm-cat-scroll">
+                <!-- CATEGORY ROW -->
+                <div class="mk-sec-head"><h3>Shop by category</h3><a onclick="homeBrowseAll()">See all</a></div>
+                <div class="mk-cats">
                     ${activeCats.map(c => {
                         const img = _catThumb(c.id, allProducts);
                         return `
-                        <div class="hm-cat-item" onclick="homeBrowseCategory('${c.id}')">
-                            <div class="hm-cat-circle">${img ? `<img src="${img}" alt="${c.name}">` : `<span>${c.emoji}</span>`}</div>
-                            <div class="hm-cat-name">${c.name}</div>
-                        </div>`;
-                    }).join('')}
-                    ${activeCats.map(c => {
-                        const img = _catThumb(c.id, allProducts);
-                        return `
-                        <div class="hm-cat-item" onclick="homeBrowseCategory('${c.id}')">
-                            <div class="hm-cat-circle">${img ? `<img src="${img}" alt="${c.name}">` : `<span>${c.emoji}</span>`}</div>
-                            <div class="hm-cat-name">${c.name}</div>
+                        <div class="mk-cat" onclick="homeBrowseCategory('${c.id}')">
+                            <div class="mk-cat-img">${img ? `<img src="${img}" alt="${esc(c.name)}">` : `<span>${c.emoji}</span>`}</div>
+                            <div class="mk-cat-name">${esc(c.name)}</div>
                         </div>`;
                     }).join('')}
                 </div>
-            </div>
 
-            <!-- CATEGORY CHIPS — static, manually scrollable with arrows -->
-            <div class="hm-cat-bar-wrap">
-                <button class="hm-cat-arrow hm-cat-arrow-left" onclick="document.getElementById('hm-cat-bar').scrollBy({left:-150,behavior:'smooth'})">‹</button>
-                <div class="hm-cat-bar" id="hm-cat-bar">
-                    <button class="hm-chip active" onclick="homeBrowseAll(); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">🛍️ All</button>
-                    ${activeCats.map(c => `
-                        <button class="hm-chip" onclick="homeBrowseCategory('${c.id}'); document.querySelectorAll('.hm-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active')">${c.emoji} ${c.name}</button>
-                    `).join('')}
-                </div>
-                <button class="hm-cat-arrow hm-cat-arrow-right" onclick="document.getElementById('hm-cat-bar').scrollBy({left:150,behavior:'smooth'})">›</button>
-            </div>
-
-            <!-- FEATURED PICKS -->
-            ${featured.length > 0 ? `
-            <div class="hm-row">
-                <div class="hm-row-header">
-                    <h3>⭐ Featured Picks</h3>
-                </div>
-                <div class="hm-scroll-track">
+                <!-- FEATURED PICKS -->
+                ${featured.length > 0 ? `
+                <div class="mk-sec-head" style="margin-top:26px"><h3>Featured picks</h3></div>
+                <div class="mk-scroll-track">
                     ${featured.map(p => _scrollCard(p, selectedStoreId)).join('')}
-                </div>
-            </div>` : ''}
+                </div>` : ''}
 
-            <!-- PER-CATEGORY ROWS -->
-            ${activeCats.map(c => {
-                const items = byCat[c.id] || [];
-                if (items.length === 0) return '';
-                const display = items.slice(0, 12);
-                return `
-                <div class="hm-row">
-                    <div class="hm-row-header">
-                        <h3>${c.emoji} ${c.name}</h3>
-                        <button class="btn btn-ghost btn-sm" onclick="homeBrowseCategory('${c.id}')" style="font-size:0.78rem;color:var(--terracotta)">
-                            See all ${items.length} →
-                        </button>
+                <!-- PER-CATEGORY ROWS -->
+                ${activeCats.map(c => {
+                    const items = byCat[c.id] || [];
+                    if (items.length === 0) return '';
+                    const display = items.slice(0, 12);
+                    return `
+                    <div class="mk-sec-head" style="margin-top:26px">
+                        <h3>${esc(c.name)}</h3>
+                        <a onclick="homeBrowseCategory('${c.id}')">See all ${items.length}</a>
                     </div>
-                    <div class="hm-scroll-track">
+                    <div class="mk-scroll-track">
                         ${display.map(p => _scrollCard(p, selectedStoreId)).join('')}
-                    </div>
-                </div>`;
-            }).join('')}
+                    </div>`;
+                }).join('')}
 
-            <!-- PROMO BANNER — bottom CTA -->
-            <div class="hm-promo">
-                <div class="hm-promo-card">
-                    <div class="hm-promo-text">
-                        <div class="hm-promo-tag">Now Open</div>
-                        <div class="hm-promo-title">Shop all 3 Patel Stores online</div>
-                        <div class="hm-promo-sub">Supermarket · Grocers · Shop — browse from anywhere, pay with MTN MoMo or cash</div>
-                        <button class="btn btn-primary btn-sm" onclick="homeBrowseAll()" style="margin-top:10px">Browse All →</button>
+                <!-- PROMO -->
+                <div class="mk-promo">
+                    <div class="mk-promo-text">
+                        <div class="mk-promo-tag">Free delivery</div>
+                        <div class="mk-promo-title">On orders over RWF 15,000</div>
+                        <button class="mk-promo-btn" onclick="homeBrowseAll()">Start shopping</button>
                     </div>
-                    <div class="hm-promo-emoji">🛒</div>
+                    <div class="mk-promo-emoji">🛒</div>
                 </div>
-            </div>
 
-            <!-- STORE INFO -->
-            <div class="hm-stores-section">
-                <h3>📍 Our Stores in Kigali</h3>
-                <div class="hm-stores-row">
-                    ${STORES.map(s => `
-                        <div class="hm-store-card ${s.id === selectedStoreId ? 'active' : ''}" onclick="switchStore('${s.id}')">
-                            <div class="hm-store-emoji">${s.emoji}</div>
-                            <div class="hm-store-name">${s.name}</div>
-                            <div class="hm-store-detail">📍 ${s.address.replace(', Rwanda','')}</div>
-                            <div class="hm-store-detail" style="color:var(--forest)">🕐 ${s.hours}</div>
-                            <div class="hm-store-detail">📱 ${s.phone}</div>
-                        </div>
-                    `).join('')}
-                </div>
+                <div style="height:120px"></div>
             </div>
         </div>
     `;
@@ -210,23 +178,20 @@ function _catThumb(catId, products) {
 function _scrollCard(product, storeId) {
     const imgs = Array.isArray(product.images) && product.images.length > 0 ? product.images : [];
     const imgHtml = imgs.length > 0
-        ? `<img src="${imgs[0]}" alt="${product.name}">`
-        : `<span class="hm-card-emoji">${product.emoji}</span>`;
+        ? `<img src="${imgs[0]}" alt="${esc(product.name)}">`
+        : `<span class="mk-card-emoji">${product.emoji}</span>`;
     const oos = product.stock === 0;
     return `
-        <div class="hm-card" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
-            <div class="hm-card-img">
+        <div class="mk-card" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
+            <div class="mk-card-img">
                 ${imgHtml}
-                ${oos ? '<div class="hm-card-oos">Sold Out</div>' : ''}
-            </div>
-            <div class="hm-card-body">
-                <div class="hm-card-name">${product.name}</div>
-                <div class="hm-card-price">${formatRWF(product.price)}</div>
-                <button class="hm-add-btn" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')"
-                    ${oos ? 'disabled' : ''}>
-                    ${oos ? 'Sold Out' : '+'}
+                ${oos ? '<div class="mk-card-oos">Sold Out</div>' : ''}
+                <button class="mk-card-add" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')" ${oos ? 'disabled' : ''}>
+                    ${oos ? '×' : '+'}
                 </button>
             </div>
+            <div class="mk-card-name">${esc(product.name)}</div>
+            <div class="mk-card-price">${formatRWF(product.price)}</div>
         </div>`;
 }
 
@@ -959,6 +924,7 @@ async function doCustomerLogin() {
         }
         
         Store.setCurrentUser({ ...customer, role: 'customer' });
+        await Store.loadMyOrders(customer.id);   // load this customer's orders
         showToast('Welcome back, ' + customer.name + '!');
         navigate('home');
     } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
@@ -1077,20 +1043,31 @@ async function doStaffLogin(role) {
         try {
             const { data, error } = await sb.auth.signInWithPassword({ email, password });
             if (error) return showToast('Invalid credentials', 'error');
-            const customer = Store.getCustomers().find(c => c.id === data.user.id);
+            // Verify admin role from database (RLS lets a user read their own row)
+            const { data: rows } = await sb.from('customers').select('*').eq('id', data.user.id).limit(1);
+            const customer = rows && rows[0];
             if (!customer || customer.role !== 'admin') { await sb.auth.signOut(); return showToast('Access denied.', 'error'); }
             Store.setCurrentUser({ ...customer, role: 'admin' });
+            await Store.loadSensitiveData('admin');   // load orders/customers/drivers now
             showToast('Welcome, Admin!');
             navigate('admin');
         } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
     } else {
         const email = document.getElementById('driver-email').value.trim();
         const password = document.getElementById('driver-password').value;
-        const driver = Store.getDrivers().find(d => d.email === email && d.password === password);
-        if (driver) {
+        if (!email || !password) return showToast('Please fill in all fields', 'error');
+        try {
+            // ✅ Drivers now authenticate via Supabase Auth (no plaintext password in browser)
+            const { data, error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) return showToast('Invalid driver credentials', 'error');
+            // Verify driver role from drivers table (RLS lets a driver read their own row)
+            const { data: rows } = await sb.from('drivers').select('*').eq('id', data.user.id).limit(1);
+            const driver = rows && rows[0];
+            if (!driver) { await sb.auth.signOut(); return showToast('Access denied.', 'error'); }
             Store.setCurrentUser({ ...driver, role: 'driver' });
+            await Store.loadSensitiveData('driver');   // load assigned orders now
             showToast(`Welcome, ${driver.name}!`);
             navigate('driver');
-        } else { showToast('Invalid driver credentials', 'error'); }
+        } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
     }
 }
