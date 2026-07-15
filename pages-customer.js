@@ -120,7 +120,9 @@ function renderHome() {
 
                 <!-- CATEGORY ROW -->
                 <div class="mk-sec-head"><h3>Shop by category</h3><a onclick="homeBrowseAll()">See all</a></div>
-                <div class="mk-cats">
+                <div class="mk-cats-wrap">
+                    <button class="mk-scroll-arrow mk-arrow-left" onclick="mkScroll('mk-cats-track',-260)" aria-label="Scroll left">‹</button>
+                    <div class="mk-cats" id="mk-cats-track">
                     ${activeCats.map(c => {
                         const img = _catThumb(c.id, allProducts);
                         return `
@@ -129,6 +131,8 @@ function renderHome() {
                             <div class="mk-cat-name">${esc(c.name)}</div>
                         </div>`;
                     }).join('')}
+                    </div>
+                    <button class="mk-scroll-arrow mk-arrow-right" onclick="mkScroll('mk-cats-track',260)" aria-label="Scroll right">›</button>
                 </div>
 
                 <!-- FEATURED PICKS -->
@@ -260,6 +264,12 @@ function switchStore(storeId) {
     setSelectedStore(storeId);
     renderHome();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Smooth-scroll a horizontal track left/right via arrow buttons
+function mkScroll(trackId, amount) {
+    const el = document.getElementById(trackId);
+    if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
 }
 
 function filterHomeCategory(catId, btn) {
