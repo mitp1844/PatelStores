@@ -2,6 +2,17 @@
    PATEL STORES — Shared UI Components
    ═══════════════════════════════════════════ */
 
+/**
+ * Escape user-supplied text before inserting into innerHTML.
+ * Prevents stored XSS (e.g. a customer name containing <script> or <img onerror>).
+ * Use for ALL user/product-supplied strings rendered into HTML.
+ */
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, m => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
+    ));
+}
+
 function updateNav() {
     const user = Store.getCurrentUser();
     const isAdmin = user && user.role === 'admin';
