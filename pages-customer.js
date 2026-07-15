@@ -190,12 +190,14 @@ function _scrollCard(product, storeId) {
             <div class="mk-card-img">
                 ${imgHtml}
                 ${oos ? '<div class="mk-card-oos">Sold Out</div>' : ''}
+            </div>
+            <div class="mk-card-name">${esc(product.name)}</div>
+            <div class="mk-card-foot">
+                <span class="mk-card-price">${formatRWF(product.price)}</span>
                 <button class="mk-card-add" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')" ${oos ? 'disabled' : ''}>
                     ${oos ? '×' : '+'}
                 </button>
             </div>
-            <div class="mk-card-name">${esc(product.name)}</div>
-            <div class="mk-card-price">${formatRWF(product.price)}</div>
         </div>`;
 }
 
