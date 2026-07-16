@@ -276,6 +276,7 @@ function homeBrowseAll() {
 function switchStore(storeId) {
     setSelectedStore(storeId);
     renderHome();
+    renderFloatingCart();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -411,6 +412,7 @@ function productCard(product, storeId) {
 function addProductToCart(storeId, productId) {
     Store.addToCart(storeId, productId);
     updateNav();
+    renderFloatingCart();
     const prod = Store.getProduct(productId);
     showToast(`${prod.emoji} ${prod.name} added!`);
 }
@@ -502,6 +504,7 @@ function addProductToCartQty(storeId, productId) {
     const qty = parseInt(document.getElementById('detail-qty').textContent) || 1;
     Store.addToCart(storeId, productId, qty);
     updateNav();
+    renderFloatingCart();
     const prod = Store.getProduct(productId);
     showToast(`${prod.emoji} ${prod.name} ×${qty} added!`);
 }
