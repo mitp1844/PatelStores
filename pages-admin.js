@@ -680,8 +680,22 @@ async function deleteProduct(productId) {
 // ═══════════════════════════════════════════
 // CATEGORIES
 // ═══════════════════════════════════════════
-function renderAdminCategories() {
+// Same ordering rule the customer home page uses: explicit sort_order first,
+// falling back to most-products-first for categories that haven't been reordered yet.
+function _orderedCategories() {
     const categories = Store.getCategories().filter(c => c.id !== 'all');
+    const products = Store.getProducts();
+    const countOf = {};
+    products.forEach(p => { countOf[p.category] = (countOf[p.category] || 0) + 1; });
+    return [...categories].sort((a, b) => {
+        const diff = (a.sort_order || 0) - (b.sort_order || 0);
+        if (diff !== 0) return diff;
+        return (countOf[b.id] || 0) - (countOf[a.id] || 0);
+    });
+}
+
+function renderAdminCategories() {
+    const categories = _orderedCategories();
     const products = Store.getProducts();
     const content = `
         <div class="admin-header">
@@ -703,9 +717,14 @@ function renderAdminCategories() {
                 </div>
             </div>
         </div>
-        ${categories.map(c => {
+        <p style="font-size:0.78rem;color:var(--slate);margin-bottom:var(--gap-sm)">Use the arrows to control the order categories appear in on the home page.</p>
+        ${categories.map((c, i) => {
             const count = products.filter(p => p.category === c.id).length;
             return `<div class="card" style="margin-bottom:6px"><div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                    <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:0.7rem;line-height:1;opacity:${i===0?'0.3':'1'}" onclick="moveCategory('${c.id}',-1)" ${i===0?'disabled':''}>▲</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:0.7rem;line-height:1;opacity:${i===categories.length-1?'0.3':'1'}" onclick="moveCategory('${c.id}',1)" ${i===categories.length-1?'disabled':''}>▼</button>
+                </div>
                 <span style="font-size:1.6rem">${c.emoji}</span>
                 <div style="flex:1"><div style="font-weight:600;font-size:0.88rem">${c.name}</div><div style="font-size:0.72rem;color:var(--slate)">${count} product${count!==1?'s':''}</div></div>
                 <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:4px 8px" onclick="deleteCategory('${c.id}')">🗑️</button>
@@ -713,6 +732,21 @@ function renderAdminCategories() {
         }).join('')}
     `;
     document.getElementById('page-container').innerHTML = adminShell('categories', content);
+}
+
+async function moveCategory(catId, direction) {
+    const ordered = _orderedCategories();
+    const idx = ordered.findIndex(c => c.id === catId);
+    const newIdx = idx + direction;
+    if (idx === -1 || newIdx < 0 || newIdx >= ordered.length) return;
+
+    // Swap positions, then renumber everyone sequentially — this guarantees a
+    // real, distinct order even if categories previously tied at the same sort_order.
+    [ordered[idx], ordered[newIdx]] = [ordered[newIdx], ordered[idx]];
+    try {
+        await Promise.all(ordered.map((c, i) => Store.updateCategory(c.id, { sort_order: i })));
+        renderAdminCategories();
+    } catch (err) { showToast('Failed: ' + err.message, 'error'); }
 }
 function showAddCategoryForm() { document.getElementById('add-category-form').style.display = ''; }
 async function addNewCategory() {
