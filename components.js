@@ -19,6 +19,18 @@ function updateNav() {
     const isDriver = user && user.role === 'driver';
     const isCustomer = user && user.role === 'customer';
 
+    const mainNav = document.getElementById('main-nav');
+
+    // On the customer/guest HOME page, hide the top nav entirely —
+    // the immersive hero carries the brand, store picker, cart and sign-in.
+    if (!isAdmin && !isDriver && currentRoute === 'home') {
+        mainNav.style.display = 'none';
+        const footer = document.getElementById('main-footer');
+        if (footer) footer.style.display = '';
+        return;
+    }
+    mainNav.style.display = '';
+
     let links = '';
     let rightSection = '';
 
