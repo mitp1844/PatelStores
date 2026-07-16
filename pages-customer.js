@@ -44,9 +44,14 @@ function renderHome() {
         byCat[p.category].push(p);
     });
 
-    // Categories that have products, sorted by count
+    // Categories that have products — ordered by admin-set sort_order first
+    // (Admin → Categories), falling back to most-products-first for any not yet reordered.
     const activeCats = categories.filter(c => byCat[c.id] && byCat[c.id].length > 0)
-        .sort((a, b) => (byCat[b.id]?.length || 0) - (byCat[a.id]?.length || 0));
+        .sort((a, b) => {
+            const orderDiff = (a.sort_order || 0) - (b.sort_order || 0);
+            if (orderDiff !== 0) return orderDiff;
+            return (byCat[b.id]?.length || 0) - (byCat[a.id]?.length || 0);
+        });
 
     // Featured = products with images, 1 per category
     const featured = [];
