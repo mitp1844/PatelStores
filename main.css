@@ -85,6 +85,13 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; }
     z-index: 100;
     background: var(--coffee);
     padding-top: var(--safe-top);
+    transition: background .3s var(--ease-out), box-shadow .3s var(--ease-out), backdrop-filter .3s var(--ease-out);
+}
+.nav.scrolled {
+    background: rgba(62, 39, 35, 0.86);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 8px 24px rgba(0,0,0,.16);
 }
 
 .nav-inner {
