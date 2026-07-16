@@ -717,36 +717,92 @@ function renderAdminCategories() {
                 </div>
             </div>
         </div>
-        <p style="font-size:0.78rem;color:var(--slate);margin-bottom:var(--gap-sm)">Use the arrows to control the order categories appear in on the home page.</p>
-        ${categories.map((c, i) => {
+        <p style="font-size:0.78rem;color:var(--slate);margin-bottom:var(--gap-sm)">Drag <b>⠿</b> to reorder — this controls the order categories appear in on the home page.</p>
+        <div id="category-drag-list">
+        ${categories.map((c) => {
             const count = products.filter(p => p.category === c.id).length;
-            return `<div class="card" style="margin-bottom:6px"><div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
-                <div style="display:flex;flex-direction:column;gap:2px">
-                    <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:0.7rem;line-height:1;opacity:${i===0?'0.3':'1'}" onclick="moveCategory('${c.id}',-1)" ${i===0?'disabled':''}>▲</button>
-                    <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:0.7rem;line-height:1;opacity:${i===categories.length-1?'0.3':'1'}" onclick="moveCategory('${c.id}',1)" ${i===categories.length-1?'disabled':''}>▼</button>
-                </div>
+            return `<div class="card cat-row" data-cat-id="${c.id}" style="margin-bottom:6px"><div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
+                <span class="cat-drag-handle" style="cursor:grab;font-size:1.3rem;color:var(--light-slate);touch-action:none;padding:4px;user-select:none">⠿</span>
                 <span style="font-size:1.6rem">${c.emoji}</span>
                 <div style="flex:1"><div style="font-weight:600;font-size:0.88rem">${c.name}</div><div style="font-size:0.72rem;color:var(--slate)">${count} product${count!==1?'s':''}</div></div>
                 <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:4px 8px" onclick="deleteCategory('${c.id}')">🗑️</button>
             </div></div>`;
         }).join('')}
+        </div>
     `;
     document.getElementById('page-container').innerHTML = adminShell('categories', content);
+    _initCategoryDrag();
 }
 
-async function moveCategory(catId, direction) {
-    const ordered = _orderedCategories();
-    const idx = ordered.findIndex(c => c.id === catId);
-    const newIdx = idx + direction;
-    if (idx === -1 || newIdx < 0 || newIdx >= ordered.length) return;
+// Drag-to-reorder for the category list, via Pointer Events (works for mouse,
+// touch and pen alike — unlike native HTML5 drag-and-drop, which touch devices
+// support unreliably at best).
+function _initCategoryDrag() {
+    const list = document.getElementById('category-drag-list');
+    if (!list) return;
 
-    // Swap positions, then renumber everyone sequentially — this guarantees a
-    // real, distinct order even if categories previously tied at the same sort_order.
-    [ordered[idx], ordered[newIdx]] = [ordered[newIdx], ordered[idx]];
-    try {
-        await Promise.all(ordered.map((c, i) => Store.updateCategory(c.id, { sort_order: i })));
-        renderAdminCategories();
-    } catch (err) { showToast('Failed: ' + err.message, 'error'); }
+    list.querySelectorAll('.cat-drag-handle').forEach(handle => {
+        handle.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            const card = handle.closest('.cat-row');
+            const startY = e.clientY;
+            let shift = 0;
+
+            card.classList.add('cat-dragging');
+            card.style.position = 'relative';
+            card.style.zIndex = '20';
+            card.style.boxShadow = '0 10px 24px rgba(0,0,0,.2)';
+            handle.style.cursor = 'grabbing';
+            document.body.style.userSelect = 'none';
+
+            function elementAfter(y) {
+                const rows = [...list.querySelectorAll('.cat-row:not(.cat-dragging)')];
+                return rows.reduce((closest, row) => {
+                    const box = row.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) return { offset, element: row };
+                    return closest;
+                }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+            }
+
+            function onMove(ev) {
+                card.style.top = (shift + (ev.clientY - startY)) + 'px';
+
+                const next = elementAfter(ev.clientY);
+                if (next !== card.nextElementSibling && next !== card) {
+                    const before = card.getBoundingClientRect().top;
+                    if (next) list.insertBefore(card, next);
+                    else list.appendChild(card);
+                    // Compensate for the layout jump so the card doesn't visually snap
+                    shift += before - card.getBoundingClientRect().top;
+                    card.style.top = (shift + (ev.clientY - startY)) + 'px';
+                }
+            }
+
+            async function onUp() {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                card.classList.remove('cat-dragging');
+                card.style.position = '';
+                card.style.top = '';
+                card.style.zIndex = '';
+                card.style.boxShadow = '';
+                handle.style.cursor = 'grab';
+                document.body.style.userSelect = '';
+
+                const ids = [...list.querySelectorAll('.cat-row')].map(r => r.dataset.catId);
+                try {
+                    await Promise.all(ids.map((id, i) => Store.updateCategory(id, { sort_order: i })));
+                } catch (err) {
+                    showToast('Failed: ' + err.message, 'error');
+                    renderAdminCategories();
+                }
+            }
+
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp, { once: true });
+        });
+    });
 }
 function showAddCategoryForm() { document.getElementById('add-category-form').style.display = ''; }
 async function addNewCategory() {
