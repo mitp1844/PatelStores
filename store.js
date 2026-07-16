@@ -462,14 +462,28 @@ const Store = {
 
     /**
      * Add a new category to Supabase and cache.
+     * New categories are placed at the end of the display order by default.
      */
     async addCategory(cat) {
-        const row = { id: cat.id, name: cat.name, emoji: cat.emoji || null };
+        const maxOrder = this._cache.categories.reduce((m, c) => Math.max(m, c.sort_order || 0), 0);
+        const row = { id: cat.id, name: cat.name, emoji: cat.emoji || null, sort_order: maxOrder + 1 };
 
         const { data, error } = await sb.from('categories').insert(row).select().single();
         if (error) throw new Error('addCategory failed: ' + error.message);
 
         this._cache.categories.push(data);
+        return data;
+    },
+
+    /**
+     * Update a category's fields (e.g. sort_order for admin reordering) in Supabase and cache.
+     */
+    async updateCategory(id, updates) {
+        const { data, error } = await sb.from('categories').update(updates).eq('id', id).select().single();
+        if (error) throw new Error('updateCategory failed: ' + error.message);
+
+        const idx = this._cache.categories.findIndex(c => c.id === id);
+        if (idx >= 0) this._cache.categories[idx] = data;
         return data;
     },
 
