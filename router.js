@@ -4,9 +4,7 @@
 
 let currentRoute = '';
 let routeParams = {};
-let navHistory = []; // track internal navigation history
-
-
+let _historyReady = false; // becomes true after the first pushState/replaceState
 
 const routes = {
     'home': () => renderHome(),
@@ -34,11 +32,6 @@ const routes = {
 };
 
 function navigate(route, params = {}) {
-    // Push current route to history before changing
-    if (currentRoute && currentRoute !== route) {
-        navHistory.push({ route: currentRoute, params: { ...routeParams } });
-        if (navHistory.length > 20) navHistory.shift();
-    }
     currentRoute = route;
     routeParams = params;
     // Save to localStorage so refresh restores the page
@@ -47,21 +40,38 @@ function navigate(route, params = {}) {
             localStorage.setItem('patel_last_route', JSON.stringify({ route, params }));
         }
     } catch(e) {}
+
+    // Record this route in real browser history so the Back button walks
+    // through in-app pages instead of leaving the site. The very first
+    // navigation replaces the existing (URL-less) history entry so Back
+    // from the home page still exits the site as expected; every
+    // navigation after that pushes a new entry.
+    const url = location.pathname + location.search + location.hash;
+    if (_historyReady) {
+        history.pushState({ route, params }, '', url);
+    } else {
+        history.replaceState({ route, params }, '', url);
+        _historyReady = true;
+    }
+
     window.scrollTo({ top: 0, behavior: 'instant' });
     renderApp();
 }
 
 function navigateBack() {
-    if (navHistory.length > 0) {
-        const prev = navHistory.pop();
-        currentRoute = prev.route;
-        routeParams = prev.params;
-        window.scrollTo({ top: 0, behavior: 'instant' });
-        renderApp();
-    } else {
-        navigate('home');
-    }
+    // Let the browser's own history stack decide what "back" means —
+    // this fires the popstate handler below, which re-renders in place.
+    history.back();
 }
+
+// Handle the browser/hardware Back and Forward buttons
+window.addEventListener('popstate', (event) => {
+    const state = event.state;
+    currentRoute = state && state.route ? state.route : 'home';
+    routeParams = state && state.params ? state.params : {};
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    renderApp();
+});
 
 function renderApp() {
     const container = document.getElementById('page-container');
