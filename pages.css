@@ -747,15 +747,31 @@
         url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80') center/cover;
 }
 .mk-hero-top {
-    position: absolute; top: 20px; left: 20px; right: 20px;
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 120;
     display: flex; justify-content: space-between; align-items: flex-start;
+    padding: calc(var(--safe-top) + 20px) 20px 16px;
+    background: transparent;
+    box-shadow: none;
+    transition: background .35s var(--ease-out), box-shadow .35s var(--ease-out),
+                backdrop-filter .35s var(--ease-out), padding .35s var(--ease-out);
+}
+.mk-hero-top.scrolled {
+    background: rgba(37, 26, 22, 0.86);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 8px 24px rgba(0,0,0,.16);
+    padding: calc(var(--safe-top) + 12px) 20px 12px;
 }
 .mk-hero-brand h1 {
     font-family: var(--font-display);
     color: #fff; font-size: 22px; font-weight: 400;
     letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px;
+    transition: font-size .3s var(--ease-out);
 }
-.mk-hero-loc { display: flex; align-items: center; gap: 4px; }
+.mk-hero-top.scrolled .mk-hero-brand h1 { font-size: 18px; margin-bottom: 0; }
+.mk-hero-top.scrolled .mk-hero-loc { opacity: 0; max-height: 0; overflow: hidden; }
+.mk-hero-loc { display: flex; align-items: center; gap: 4px; transition: opacity .25s ease; }
 .mk-loc-pin { font-size: 12px; }
 .mk-store-select {
     background: transparent; border: none; color: #fff;
@@ -935,12 +951,25 @@
    MARKET CART — modern cart page
    ═══════════════════════════════════════════ */
 .mkc-page { max-width: 620px; margin: 0 auto; padding: 16px 16px 40px; }
-.mkc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.mkc-header {
+    position: sticky;
+    top: calc(52px + var(--safe-top));
+    z-index: 90;
+    display: flex; align-items: center; gap: 12px;
+    margin: 0 -16px 18px;
+    padding: 14px 16px;
+    background: rgba(242,237,229,0.88);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    box-shadow: 0 4px 16px rgba(0,0,0,.05);
+}
 .mkc-back {
     width: 40px; height: 40px; border-radius: 12px; background: #fff;
     border: 1px solid var(--cream-dark); display: flex; align-items: center;
     justify-content: center; cursor: pointer; flex-shrink: 0;
+    transition: transform .15s ease;
 }
+.mkc-back:active { transform: scale(.92); }
 .mkc-header h1 { font-family: var(--font-display); font-size: 24px; font-weight: 400; color: var(--coffee); }
 
 .mkc-store-block {
