@@ -56,8 +56,10 @@ if (user) {
         }
     }
 
-    // Scroll effect for nav
+    // Scroll effect for nav (and the home hero's floating header, if present)
     window.addEventListener('scroll', () => {
         document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 10);
+        const heroTop = document.querySelector('.mk-hero-top');
+        if (heroTop) heroTop.classList.toggle('scrolled', window.scrollY > 60);
     });
 });
