@@ -86,4 +86,6 @@ function renderApp() {
     } else {
         renderHome();
     }
+
+    renderFloatingCart();
 }
