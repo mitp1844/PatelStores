@@ -519,55 +519,89 @@ function renderCart() {
         if (cart.length === 0) return;
         hasItems = true;
         const products = Store.getProducts();
-        let storeTotal = 0;
+        let subtotal = 0;
+        const itemCount = cart.reduce((s, ci) => s + ci.qty, 0);
+
         const itemsHtml = cart.map(ci => {
             const prod = products.find(p => p.id === ci.productId);
             if (!prod) return '';
             const lineTotal = prod.price * ci.qty;
-            storeTotal += lineTotal;
-            const imgContent = prod.image ? `<img src="${prod.image}" alt="">` : prod.emoji;
+            subtotal += lineTotal;
+            const img = prod.image || (prod.images && prod.images[0]);
+            const imgContent = img
+                ? `<img src="${img}" alt="${esc(prod.name)}">`
+                : `<span class="mkc-item-emoji">${prod.emoji || '📦'}</span>`;
             return `
-                <div class="cart-item">
-                    <div class="cart-item-img">${imgContent}</div>
-                    <div class="cart-item-details">
-                        <h4>${prod.name}</h4>
-                        <div class="cart-item-price">${formatRWF(prod.price)} each</div>
+                <div class="mkc-item">
+                    <div class="mkc-item-img">${imgContent}</div>
+                    <div class="mkc-item-info">
+                        <h4>${esc(prod.name)}</h4>
+                        <div class="mkc-item-unit">${formatRWF(prod.price)} each</div>
+                        <div class="mkc-item-line">${formatRWF(lineTotal)}</div>
                     </div>
-                    <div class="qty-control">
-                        <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty - 1})">−</button>
-                        <span>${ci.qty}</span>
-                        <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty + 1})">+</button>
+                    <div class="mkc-item-right">
+                        <button class="mkc-remove" onclick="removeCartItem('${store.id}','${prod.id}')" aria-label="Remove">✕</button>
+                        <div class="mkc-qty">
+                            <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty - 1})">−</button>
+                            <span>${ci.qty}</span>
+                            <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty + 1})">+</button>
+                        </div>
                     </div>
-                    <div style="font-weight:700;min-width:80px;text-align:right;font-size:0.85rem">${formatRWF(lineTotal)}</div>
-                    <button class="cart-item-remove" onclick="removeCartItem('${store.id}','${prod.id}')">✕</button>
                 </div>
             `;
         }).join('');
 
+        // free delivery logic
+        const FREE = 15000;
+        const delivery = subtotal >= FREE ? 0 : 1500;
+        const total = subtotal + delivery;
+        const remaining = FREE - subtotal;
+        const progress = Math.min(100, Math.round((subtotal / FREE) * 100));
+
         storeCartsHtml += `
-            <div style="margin-bottom:var(--gap-lg)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                    <h3 style="display:flex;align-items:center;gap:6px;font-size:1rem">${store.emoji} ${store.name}</h3>
-                    <span style="font-weight:700;color:var(--forest);font-size:0.9rem">${formatRWF(storeTotal)}</span>
+            <div class="mkc-store-block">
+                <div class="mkc-store-head">
+                    <div class="mkc-store-name">${store.emoji} ${store.name}</div>
+                    <div class="mkc-store-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</div>
                 </div>
-                ${itemsHtml}
-                <div style="text-align:right;margin-top:var(--gap-sm)">
-                    <button class="btn btn-primary" onclick="navigate('checkout',{storeId:'${store.id}'})">Checkout ${store.name.replace('Patel ','')} →</button>
+
+                ${delivery === 0
+                    ? `<div class="mkc-free mkc-free-done">🎉 You've unlocked FREE delivery!</div>`
+                    : `<div class="mkc-free">
+                         <div class="mkc-free-text">Add <b>${formatRWF(remaining)}</b> more for FREE delivery</div>
+                         <div class="mkc-free-bar"><div class="mkc-free-fill" style="width:${progress}%"></div></div>
+                       </div>`}
+
+                <div class="mkc-items">${itemsHtml}</div>
+
+                <div class="mkc-summary">
+                    <div class="mkc-sline"><span>Subtotal</span><span>${formatRWF(subtotal)}</span></div>
+                    <div class="mkc-sline"><span>Delivery fee</span><span>${delivery === 0 ? '<b style="color:var(--forest)">FREE</b>' : formatRWF(delivery)}</span></div>
+                    <div class="mkc-sline mkc-total"><span>Total</span><span>${formatRWF(total)}</span></div>
                 </div>
+
+                <button class="mkc-checkout-btn" onclick="navigate('checkout',{storeId:'${store.id}'})">
+                    Checkout · ${formatRWF(total)}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
             </div>
         `;
     });
 
     container.innerHTML = `
-        <div class="container" style="padding:var(--gap-lg) 12px;max-width:900px;margin:0 auto">
-            <h1 style="font-size:1.5rem">Your Cart</h1>
-            <p style="color:var(--slate);margin-bottom:var(--gap-md);font-size:0.85rem">Each store has a separate cart for easier delivery.</p>
+        <div class="mkc-page">
+            <div class="mkc-header">
+                <button class="mkc-back" onclick="navigate('home')" aria-label="Back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--coffee)" stroke-width="2.5"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+                </button>
+                <h1>Your Cart</h1>
+            </div>
             ${hasItems ? storeCartsHtml : `
-                <div class="empty-state">
-                    <div class="empty-icon">🛒</div>
+                <div class="mkc-empty">
+                    <div class="mkc-empty-icon">🛒</div>
                     <h3>Your cart is empty</h3>
-                    <p>Browse products and add items!</p>
-                    <button class="btn btn-primary" style="margin-top:12px" onclick="navigate('home')">Start Shopping</button>
+                    <p>Browse fresh products and add your favourites</p>
+                    <button class="mkc-checkout-btn" style="max-width:240px;margin:16px auto 0" onclick="navigate('home')">Start Shopping</button>
                 </div>
             `}
         </div>
