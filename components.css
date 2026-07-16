@@ -162,14 +162,15 @@ textarea.form-input { resize: vertical; min-height: 70px; }
 
 .product-card {
     background: white;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
     border: 1px solid rgba(0,0,0,0.04);
 }
-.product-card:active { transform: scale(0.98); }
+.product-card:active { transform: scale(0.96); }
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 14px 26px rgba(0,0,0,0.1); }
 
 .product-img {
     height: 180px;
