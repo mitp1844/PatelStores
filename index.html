@@ -1,1133 +1,154 @@
-const STORE_MOMO_CODES = {
-    'supermarket': '004305',
-    'grocers': '1602698',
-    'shop': '051368'
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Patel Stores — Kigali, Rwanda</title>
 
-// Track selected store globally — default to grocers
-let selectedStoreId = localStorage.getItem('patel-selected-store') || 'grocers';
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#E8A317">
+    <meta name="description" content="Shop fresh groceries, household essentials & more from Patel Stores across Kigali. Order online, pay with MTN Mobile Money.">
+    <meta name="mobile-web-app-capable" content="yes">
 
-function setSelectedStore(storeId) {
-    selectedStoreId = storeId;
-    localStorage.setItem('patel-selected-store', storeId);
-}
+    <!-- iOS PWA Meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Patel Stores">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-// ═══════════════════════════════════════════
-// HOME — Instacart / Jumia-style curated layout
-// ═══════════════════════════════════════════
-window._allHomeProducts = [];
-window._homeStoreId = '';
-window._loadMoreOffset = 100;
-window._homeCategory = 'all';
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
 
-function renderHome() {
-    const container = document.getElementById('page-container');
-    const store = STORES.find(s => s.id === selectedStoreId) || STORES[0];
-    const allProducts = Store.getProducts().filter(p => p.stores && p.stores.includes(selectedStoreId));
-    const categories = Store.getCategories().filter(c => c.id !== 'all');
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png">
 
-    // User + cart for the in-hero action buttons
-    const user = Store.getCurrentUser();
-    const isCustomer = user && user.role === 'customer';
-    const cartCount = Store.getTotalCartCount();
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css?v=20260716c">
+    <link rel="stylesheet" href="components.css?v=20260716c">
+    <link rel="stylesheet" href="pages.css?v=20260716c">
+</head>
+<body>
+    <div id="app">
+        <!-- Toast container -->
+        <div id="toast-container"></div>
 
-    window._allHomeProducts = allProducts;
-    window._homeStoreId = selectedStoreId;
-    window._loadMoreOffset = 100;
-    window._homeCategory = 'all';
-    window._filteredHomeProducts = null;
-
-    // Organize products by category
-    const byCat = {};
-    allProducts.forEach(p => {
-        if (!byCat[p.category]) byCat[p.category] = [];
-        byCat[p.category].push(p);
-    });
-
-    // Categories that have products, sorted by count
-    const activeCats = categories.filter(c => byCat[c.id] && byCat[c.id].length > 0)
-        .sort((a, b) => (byCat[b.id]?.length || 0) - (byCat[a.id]?.length || 0));
-
-    // Featured = products with images, 1 per category
-    const featured = [];
-    const seenCat = new Set();
-    for (const p of allProducts) {
-        if (Array.isArray(p.images) && p.images.length > 0 && !seenCat.has(p.category)) {
-            featured.push(p);
-            seenCat.add(p.category);
-        }
-        if (featured.length >= 10) break;
-    }
-    // Fill remaining with any imaged products
-    if (featured.length < 10) {
-        for (const p of allProducts) {
-            if (Array.isArray(p.images) && p.images.length > 0 && !featured.includes(p)) {
-                featured.push(p);
-                if (featured.length >= 10) break;
-            }
-        }
-    }
-
-    container.innerHTML = `
-        <!-- ═══ IMMERSIVE HERO ═══ -->
-        <div class="mk-hero">
-            <div class="mk-hero-top">
-                <div class="mk-hero-brand">
-                    <h1>Patel Stores</h1>
-                    <div class="mk-hero-loc">
-                        <span class="mk-loc-pin">📍</span>
-                        <select id="store-picker" onchange="switchStore(this.value)" class="mk-store-select">
-                            ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                        </select>
-                    </div>
-                </div>
-                <div class="mk-hero-actions">
-                    <button class="mk-hero-cart" onclick="navigate('cart')" aria-label="Cart">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.4 12.3a1 1 0 0 0 1 .7h8.7a1 1 0 0 0 1-.8L21 7H6"/></svg>
-                        ${cartCount > 0 ? `<span class="mk-cart-badge">${cartCount}</span>` : ''}
-                    </button>
-                    ${isCustomer
-                        ? `<button class="mk-hero-avatar" onclick="navigate('my-orders')" title="${esc(user.name)}">${esc(user.name.charAt(0))}</button>`
-                        : `<button class="mk-hero-signin" onclick="navigate('login')">Sign In</button>`}
-                </div>
-            </div>
-            <div class="mk-hero-copy">
-                <div class="mk-hero-eyebrow">Fresh today · ${store.hours}</div>
-                <h2>Groceries delivered from your neighbourhood</h2>
-                <button class="mk-hero-cta" onclick="homeBrowseAll()">
-                    Shop now
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                </button>
+        <!-- OTP Modal -->
+        <div id="otp-modal" class="modal-overlay" style="display:none">
+            <div class="modal-card otp-card">
+                <div class="modal-close" onclick="closeOtpModal()">&times;</div>
+                <div class="otp-icon">🔐</div>
+                <h2>Verify Your Identity</h2>
+                <p class="otp-sub">Enter the 6-digit code sent to your email/phone</p>
+                <div class="otp-inputs" id="otp-inputs"></div>
+                <div class="otp-timer" id="otp-timer">Code expires in <span id="otp-countdown">5:00</span></div>
+                <button class="btn btn-primary btn-full" id="otp-verify-btn" onclick="verifyOtp()">Verify Code</button>
+                <button class="btn btn-ghost btn-full" onclick="resendOtp()">Resend Code</button>
             </div>
         </div>
 
-        <!-- ═══ CONTENT SHEET ═══ -->
-        <div class="mk-sheet">
-
-            <!-- SEARCH BOX -->
-            <div class="mk-search-box">
-                <span class="mk-search-icon">🔍</span>
-                <input type="text" id="home-search" placeholder="Search ${allProducts.length.toLocaleString()} products..."
-                    oninput="filterHomeProducts()" onfocus="homeShowSearch()">
-            </div>
-
-            <!-- SEARCH RESULTS (hidden by default) -->
-            <div id="hm-search-results" style="display:none">
-                <div style="padding:8px 4px">
-                    <button class="btn btn-ghost btn-sm" onclick="homeClearSearch()" style="margin-bottom:8px">← Back to Home</button>
-                    <span style="font-size:0.82rem;color:var(--slate)" id="product-count"></span>
-                </div>
-                <div style="padding:0 0 24px">
-                    <div class="product-grid" id="products-grid"></div>
-                    <div id="load-more-wrap" style="display:none;text-align:center;padding:16px 0">
-                        <span style="font-size:0.78rem;color:var(--slate)" id="shown-count"></span><br>
-                        <button onclick="loadMoreProducts()" class="btn btn-primary" style="margin-top:8px;padding:10px 32px;font-size:0.85rem">View More</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CURATED HOME (visible by default) -->
-            <div id="hm-home-content">
-
-                <!-- CATEGORY ROW -->
-                <div class="mk-sec-head"><h3>Shop by category</h3><a onclick="homeBrowseAll()">See all</a></div>
-                <div class="mk-cats-wrap">
-                    <button class="mk-scroll-arrow mk-arrow-left" onclick="mkScroll('mk-cats-track',-260)" aria-label="Scroll left">‹</button>
-                    <div class="mk-cats" id="mk-cats-track">
-                    ${activeCats.map(c => {
-                        const img = _catThumb(c.id, allProducts);
-                        return `
-                        <div class="mk-cat" onclick="homeBrowseCategory('${c.id}')">
-                            <div class="mk-cat-img">${img ? `<img src="${img}" alt="${esc(c.name)}">` : `<span>${c.emoji}</span>`}</div>
-                            <div class="mk-cat-name">${esc(c.name)}</div>
-                        </div>`;
-                    }).join('')}
-                    </div>
-                    <button class="mk-scroll-arrow mk-arrow-right" onclick="mkScroll('mk-cats-track',260)" aria-label="Scroll right">›</button>
-                </div>
-
-                <!-- FEATURED PICKS -->
-                ${featured.length > 0 ? `
-                <div class="mk-sec-head" style="margin-top:26px"><h3>Featured picks</h3></div>
-                <div class="mk-scroll-track">
-                    ${featured.map(p => _scrollCard(p, selectedStoreId)).join('')}
-                </div>` : ''}
-
-                <!-- PER-CATEGORY ROWS -->
-                ${activeCats.map(c => {
-                    const items = byCat[c.id] || [];
-                    if (items.length === 0) return '';
-                    const display = items.slice(0, 12);
-                    return `
-                    <div class="mk-sec-head" style="margin-top:26px">
-                        <h3>${esc(c.name)}</h3>
-                        <a onclick="homeBrowseCategory('${c.id}')">See all ${items.length}</a>
-                    </div>
-                    <div class="mk-scroll-track">
-                        ${display.map(p => _scrollCard(p, selectedStoreId)).join('')}
-                    </div>`;
-                }).join('')}
-
-                <!-- PROMO -->
-                <div class="mk-promo">
-                    <div class="mk-promo-text">
-                        <div class="mk-promo-tag">Free delivery</div>
-                        <div class="mk-promo-title">On orders over RWF 15,000</div>
-                        <button class="mk-promo-btn" onclick="homeBrowseAll()">Start shopping</button>
-                    </div>
-                    <div class="mk-promo-emoji">🛒</div>
-                </div>
-
-                <div style="height:120px"></div>
+        <!-- Email Preview Modal -->
+        <div id="email-modal" class="modal-overlay" style="display:none">
+            <div class="modal-card email-card">
+                <div class="modal-close" onclick="document.getElementById('email-modal').style.display='none'">&times;</div>
+                <div class="email-preview" id="email-preview-content"></div>
             </div>
         </div>
-    `;
-}
 
-// ── Helpers for curated home ──
-function _catThumb(catId, products) {
-    const p = products.find(pr => pr.category === catId && Array.isArray(pr.images) && pr.images.length > 0);
-    return p ? p.images[0] : null;
-}
-
-function _scrollCard(product, storeId) {
-    const imgs = Array.isArray(product.images) && product.images.length > 0 ? product.images : [];
-    const imgHtml = imgs.length > 0
-        ? `<img src="${imgs[0]}" alt="${esc(product.name)}">`
-        : `<span class="mk-card-emoji">${product.emoji}</span>`;
-    const oos = product.stock === 0;
-    return `
-        <div class="mk-card" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
-            <div class="mk-card-img">
-                ${imgHtml}
-                ${oos ? '<div class="mk-card-oos">Sold Out</div>' : ''}
-            </div>
-            <div class="mk-card-name">${esc(product.name)}</div>
-            <div class="mk-card-foot">
-                <span class="mk-card-price">${formatRWF(product.price)}</span>
-                <button class="mk-card-add" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')" ${oos ? 'disabled' : ''}>
-                    ${oos ? '×' : '+'}
-                </button>
-            </div>
-        </div>`;
-}
-
-function homeShowSearch() {
-    // If user focuses search, show search results view
-    const q = document.getElementById('home-search')?.value || '';
-    if (q.length > 0) {
-        _homeShowSearchResults();
-    }
-}
-
-function _homeShowSearchResults() {
-    document.getElementById('hm-home-content').style.display = 'none';
-    document.getElementById('hm-search-results').style.display = '';
-}
-
-function homeClearSearch() {
-    document.getElementById('home-search').value = '';
-    document.getElementById('hm-home-content').style.display = '';
-    document.getElementById('hm-search-results').style.display = 'none';
-}
-
-function homeBrowseCategory(catId) {
-    // Show search results filtered to a category
-    window._homeCategory = catId;
-    window._filteredHomeProducts = window._allHomeProducts.filter(p => p.category === catId);
-    window._loadMoreOffset = 100;
-
-    _homeShowSearchResults();
-    const cat = Store.getCategories().find(c => c.id === catId);
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = window._filteredHomeProducts.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
-    document.getElementById('product-count').textContent = `${cat ? cat.emoji + ' ' + cat.name : ''} — ${window._filteredHomeProducts.length} products`;
-
-    const wrap = document.getElementById('load-more-wrap');
-    if (window._filteredHomeProducts.length > 100) {
-        wrap.style.display = '';
-        document.getElementById('shown-count').textContent = `Showing 100 of ${window._filteredHomeProducts.length}`;
-    } else {
-        wrap.style.display = 'none';
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function homeBrowseAll() {
-    window._homeCategory = 'all';
-    window._filteredHomeProducts = null;
-    window._loadMoreOffset = 100;
-
-    _homeShowSearchResults();
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = window._allHomeProducts.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
-    document.getElementById('product-count').textContent = `${window._allHomeProducts.length} products`;
-
-    const wrap = document.getElementById('load-more-wrap');
-    if (window._allHomeProducts.length > 100) {
-        wrap.style.display = '';
-        document.getElementById('shown-count').textContent = `Showing 100 of ${window._allHomeProducts.length}`;
-    } else {
-        wrap.style.display = 'none';
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function switchStore(storeId) {
-    setSelectedStore(storeId);
-    renderHome();
-    renderFloatingCart();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Smooth-scroll a horizontal track left/right via arrow buttons
-function mkScroll(trackId, amount) {
-    const el = document.getElementById(trackId);
-    if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
-}
-
-function filterHomeCategory(catId, btn) {
-    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    window._homeCategory = catId;
-
-    // Re-filter from the full product list and reset pagination
-    const q = document.getElementById('home-search').value.toLowerCase();
-    let filtered = catId === 'all'
-        ? window._allHomeProducts
-        : window._allHomeProducts.filter(p => p.category === catId);
-    if (q) {
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
-    }
-
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = filtered.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
-    document.getElementById('product-count').textContent = filtered.length + ' products';
-
-    // Update or remove Load More button
-    const wrap = document.getElementById('load-more-wrap');
-    if (filtered.length > 100) {
-        if (wrap) {
-            document.getElementById('shown-count').textContent = `Showing 100 of ${filtered.length}`;
-            wrap.style.display = '';
-        }
-    } else {
-        if (wrap) wrap.style.display = 'none';
-    }
-    window._loadMoreOffset = 100;
-    window._filteredHomeProducts = filtered;
-}
-
-function filterHomeProducts() {
-    const q = document.getElementById('home-search').value.toLowerCase().trim();
-
-    if (!q) {
-        // Back to curated home
-        homeClearSearch();
-        return;
-    }
-
-    // Show search results view
-    _homeShowSearchResults();
-
-    const filtered = window._allHomeProducts.filter(p => p.name.toLowerCase().includes(q));
-    window._filteredHomeProducts = filtered;
-    window._loadMoreOffset = 100;
-
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = filtered.slice(0, 100).map(p => productCard(p, window._homeStoreId)).join('');
-    document.getElementById('product-count').textContent = `${filtered.length} results for "${q}"`;
-
-    const wrap = document.getElementById('load-more-wrap');
-    if (filtered.length > 100) {
-        wrap.style.display = '';
-        document.getElementById('shown-count').textContent = `Showing 100 of ${filtered.length}`;
-    } else {
-        wrap.style.display = 'none';
-    }
-
-    if (filtered.length === 0) {
-        grid.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">🔍</div>
-                <h3>No products found</h3>
-                <p>Try a different search term</p>
-            </div>`;
-    }
-}
-
-function loadMoreProducts() {
-    // Use filtered list if search/category is active, otherwise full list
-    const products = window._filteredHomeProducts || window._allHomeProducts;
-    const grid = document.getElementById('products-grid');
-    const next = products.slice(window._loadMoreOffset, window._loadMoreOffset + 100);
-    next.forEach(p => grid.insertAdjacentHTML('beforeend', productCard(p, window._homeStoreId)));
-    window._loadMoreOffset += 100;
-
-    const shown = Math.min(window._loadMoreOffset, products.length);
-    const wrap = document.getElementById('load-more-wrap');
-    if (shown >= products.length) {
-        if (wrap) wrap.style.display = 'none';
-    } else {
-        document.getElementById('shown-count').textContent = `Showing ${shown} of ${products.length}`;
-    }
-}
-
-// ═══════════════════════════════════════════
-// STORE PAGE — Same as home but for direct nav
-// ═══════════════════════════════════════════
-function renderStorePage(storeId) {
-    setSelectedStore(storeId);
-    renderHome();
-}
-
-// ═══════════════════════════════════════════
-// PRODUCT CARD
-// ═══════════════════════════════════════════
-function productCard(product, storeId) {
-    const images = Array.isArray(product.images) && product.images.length > 0 ? product.images : (product.image ? [product.image] : []);
-    const imgContent = images.length > 0 ? `<img src="${images[0]}" alt="${product.name}">` : product.emoji;
-    const photoCount = images.length > 1 ? `<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;border-radius:var(--radius-full);padding:1px 6px;font-size:0.65rem">📷 ${images.length}</div>` : '';
-    const isOutOfStock = product.stock === 0;
-    return `
-        <div class="product-card" data-category="${product.category}" data-name="${product.name.toLowerCase()}" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
-            <div class="product-img" style="position:relative">
-                ${imgContent}
-                ${photoCount}
-                ${isOutOfStock ? '<div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:var(--red)">SOLD OUT</div>' : ''}
-            </div>
-            <div class="product-info">
-                <div class="product-name">${product.name}</div>
-                <div class="product-price">${formatRWF(product.price)}</div>
-                <div class="product-actions">
-                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')" ${isOutOfStock ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>
-                        ${isOutOfStock ? 'Sold Out' : '+ Add'}
-                    </button>
-                </div>
+        <div id="order-detail-modal" class="modal-overlay" style="display:none">
+            <div class="modal-card" style="max-width:520px">
+                <div class="modal-close" onclick="document.getElementById('order-detail-modal').style.display='none'">&times;</div>
+                <div id="order-detail-content"></div>
             </div>
         </div>
-    `;
-}
 
-function addProductToCart(storeId, productId) {
-    Store.addToCart(storeId, productId);
-    updateNav();
-    renderFloatingCart();
-    const prod = Store.getProduct(productId);
-    showToast(`${prod.emoji} ${prod.name} added!`);
-}
-
-// ═══════════════════════════════════════════
-// PRODUCT DETAIL
-// ═══════════════════════════════════════════
-function renderProductDetail(productId, storeId) {
-    const product = Store.getProduct(productId);
-    const store = STORES.find(s => s.id === storeId) || STORES[0];
-    if (!product) return navigate('home');
-
-    const images = Array.isArray(product.images) && product.images.length > 0 ? product.images : (product.image ? [product.image] : []);
-    const stockLabel = product.stock === 0
-        ? `<span style="color:var(--red);font-weight:700">❌ Out of Stock</span>`
-        : product.stock <= 5 && product.stock != null
-        ? `<span style="color:var(--orange);font-weight:700">⚠️ Only ${product.stock} left!</span>`
-        : `<span style="color:var(--forest);font-weight:700">✅ In Stock</span>`;
-
-    const container = document.getElementById('page-container');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    container.innerHTML = `
-        <div style="max-width:1000px;margin:0 auto">
-            <!-- Back button -->
-            <div style="padding:10px 12px">
-                <button class="btn btn-ghost btn-sm" onclick="navigateBack()" style="padding:6px 10px;font-size:0.82rem">← Back</button>
-            </div>
-
-            <div class="product-detail-grid" style="padding:0 12px">
-                <!-- Images -->
-                <div>
-                    <div style="width:100%;height:400px;border-radius:var(--radius-md);overflow:hidden;background:var(--cream);display:flex;align-items:center;justify-content:center;margin-bottom:8px;padding:12px">
-                        ${images.length > 0
-                            ? `<img src="${images[0]}" style="max-width:100%;max-height:100%;object-fit:contain" id="main-photo-img">`
-                            : `<span style="font-size:6rem">${product.emoji}</span>`}
-                    </div>
-                    ${images.length > 1 ? `
-                    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
-                        ${images.map((img, i) => `
-                            <img src="${img}"
-                                onclick="document.getElementById('main-photo-img').src='${img}';document.querySelectorAll('.thumb').forEach(t=>t.style.border='2px solid var(--cream-dark)');this.style.border='2px solid var(--saffron)'"
-                                class="thumb"
-                                style="width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer;flex-shrink:0;border:${i===0?'2px solid var(--saffron)':'2px solid var(--cream-dark)'}">
-                        `).join('')}
-                    </div>` : ''}
-                </div>
-
-                <!-- Details -->
-                <div style="padding:4px 0">
-                    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--slate);margin-bottom:4px">
-                        ${Store.getCategories().find(c => c.id === product.category)?.name || ''}
-                    </div>
-                    <h1 style="margin-bottom:8px;font-size:1.5rem">${product.name}</h1>
-                    <div style="font-size:1.8rem;font-weight:800;color:var(--forest);margin-bottom:10px">${formatRWF(product.price)}</div>
-                    <div style="margin-bottom:12px">${stockLabel}</div>
-
-                    <div style="padding:10px;background:var(--cream);border-radius:var(--radius-md);margin-bottom:14px;font-size:0.82rem">
-                        <span style="color:var(--slate)">Available at:</span>
-                        <span style="font-weight:600">${product.stores.map(s => STORES.find(st=>st.id===s)?.name.replace('Patel ','')).filter(Boolean).join(' · ')}</span>
-                    </div>
-
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-                        <div class="qty-control">
-                            <button onclick="changeDetailQty(-1)">−</button>
-                            <span id="detail-qty">1</span>
-                            <button onclick="changeDetailQty(1)">+</button>
-                        </div>
-                        <button class="btn btn-primary" style="flex:1;padding:12px;border-radius:var(--radius-md)"
-                            onclick="addProductToCartQty('${storeId}','${product.id}')"
-                            ${product.stock === 0 ? 'disabled style="opacity:0.4"' : ''}>
-                            ${product.stock === 0 ? 'Out of Stock' : '🛒 Add to Cart'}
-                        </button>
-                    </div>
-                    <div style="font-size:0.78rem;color:var(--slate)">
-                        📍 Shopping from: <b>${store.name}</b>
-                    </div>
-                </div>
+        <div id="invoice-modal" class="modal-overlay" style="display:none">
+            <div class="modal-card" style="max-width:700px;width:92%">
+                <div class="modal-close" onclick="_closeInvoiceModal()">&times;</div>
+                <div id="invoice-preview-content"></div>
             </div>
         </div>
-    `;
-}
 
-function changeDetailQty(delta) {
-    const el = document.getElementById('detail-qty');
-    el.textContent = Math.max(1, parseInt(el.textContent) + delta);
-}
+        <!-- NAVIGATION -->
+        <nav id="main-nav" class="nav"></nav>
 
-function addProductToCartQty(storeId, productId) {
-    const qty = parseInt(document.getElementById('detail-qty').textContent) || 1;
-    Store.addToCart(storeId, productId, qty);
-    updateNav();
-    renderFloatingCart();
-    const prod = Store.getProduct(productId);
-    showToast(`${prod.emoji} ${prod.name} ×${qty} added!`);
-}
+        <!-- PAGE CONTAINER -->
+        <main id="page-container"></main>
 
-// ═══════════════════════════════════════════
-// CART
-// ═══════════════════════════════════════════
-function renderCart() {
-    const container = document.getElementById('page-container');
-    let storeCartsHtml = '';
-    let hasItems = false;
-
-    STORES.forEach(store => {
-        const cart = Store.getCart(store.id);
-        if (cart.length === 0) return;
-        hasItems = true;
-        const products = Store.getProducts();
-        let subtotal = 0;
-        const itemCount = cart.reduce((s, ci) => s + ci.qty, 0);
-
-        const itemsHtml = cart.map(ci => {
-            const prod = products.find(p => p.id === ci.productId);
-            if (!prod) return '';
-            const lineTotal = prod.price * ci.qty;
-            subtotal += lineTotal;
-            const img = prod.image || (prod.images && prod.images[0]);
-            const imgContent = img
-                ? `<img src="${img}" alt="${esc(prod.name)}">`
-                : `<span class="mkc-item-emoji">${prod.emoji || '📦'}</span>`;
-            return `
-                <div class="mkc-item">
-                    <div class="mkc-item-img">${imgContent}</div>
-                    <div class="mkc-item-info">
-                        <h4>${esc(prod.name)}</h4>
-                        <div class="mkc-item-unit">${formatRWF(prod.price)} each</div>
-                        <div class="mkc-item-line">${formatRWF(lineTotal)}</div>
-                    </div>
-                    <div class="mkc-item-right">
-                        <button class="mkc-remove" onclick="removeCartItem('${store.id}','${prod.id}')" aria-label="Remove">✕</button>
-                        <div class="mkc-qty">
-                            <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty - 1})">−</button>
-                            <span>${ci.qty}</span>
-                            <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty + 1})">+</button>
-                        </div>
+        <!-- FOOTER -->
+        <footer id="main-footer" class="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <div class="logo-mark">P</div>
+                    <div>
+                        <div class="footer-name">Patel Stores</div>
+                        <div class="footer-tagline">Serving Kigali since 2020</div>
                     </div>
                 </div>
-            `;
-        }).join('');
-
-        // free delivery logic
-        const FREE = 15000;
-        const delivery = subtotal >= FREE ? 0 : 1500;
-        const total = subtotal + delivery;
-        const remaining = FREE - subtotal;
-        const progress = Math.min(100, Math.round((subtotal / FREE) * 100));
-
-        storeCartsHtml += `
-            <div class="mkc-store-block">
-                <div class="mkc-store-head">
-                    <div class="mkc-store-name">${store.emoji} ${store.name}</div>
-                    <div class="mkc-store-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</div>
-                </div>
-
-                ${delivery === 0
-                    ? `<div class="mkc-free mkc-free-done">🎉 You've unlocked FREE delivery!</div>`
-                    : `<div class="mkc-free">
-                         <div class="mkc-free-text">Add <b>${formatRWF(remaining)}</b> more for FREE delivery</div>
-                         <div class="mkc-free-bar"><div class="mkc-free-fill" style="width:${progress}%"></div></div>
-                       </div>`}
-
-                <div class="mkc-items">${itemsHtml}</div>
-
-                <div class="mkc-summary">
-                    <div class="mkc-sline"><span>Subtotal</span><span>${formatRWF(subtotal)}</span></div>
-                    <div class="mkc-sline"><span>Delivery fee</span><span>${delivery === 0 ? '<b style="color:var(--forest)">FREE</b>' : formatRWF(delivery)}</span></div>
-                    <div class="mkc-sline mkc-total"><span>Total</span><span>${formatRWF(total)}</span></div>
-                </div>
-
-                <button class="mkc-checkout-btn" onclick="navigate('checkout',{storeId:'${store.id}'})">
-                    Checkout · ${formatRWF(total)}
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                </button>
-            </div>
-        `;
-    });
-
-    container.innerHTML = `
-        <div class="mkc-page">
-            <div class="mkc-header">
-                <button class="mkc-back" onclick="navigate('home')" aria-label="Back">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--coffee)" stroke-width="2.5"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-                </button>
-                <h1>Your Cart</h1>
-            </div>
-            ${hasItems ? storeCartsHtml : `
-                <div class="mkc-empty">
-                    <div class="mkc-empty-icon">🛒</div>
-                    <h3>Your cart is empty</h3>
-                    <p>Browse fresh products and add your favourites</p>
-                    <button class="mkc-checkout-btn" style="max-width:240px;margin:16px auto 0" onclick="navigate('home')">Start Shopping</button>
-                </div>
-            `}
-        </div>
-    `;
-}
-
-function updateQty(storeId, productId, qty) {
-    if (qty < 1) return removeCartItem(storeId, productId);
-    Store.updateCartQty(storeId, productId, qty);
-    renderCart();
-    updateNav();
-}
-
-function removeCartItem(storeId, productId) {
-    Store.removeFromCart(storeId, productId);
-    renderCart();
-    updateNav();
-    showToast('Item removed', 'info');
-}
-
-// ═══════════════════════════════════════════
-// CHECKOUT
-// ═══════════════════════════════════════════
-function renderCheckout(storeId) {
-    const user = Store.getCurrentUser();
-    const isGuest = !user || user.role !== 'customer';
-    const store = STORES.find(s => s.id === storeId);
-    if (!store) return navigate('cart');
-    const cart = Store.getCart(storeId);
-    if (cart.length === 0) return navigate('cart');
-
-    const products = Store.getProducts();
-    let subtotal = 0;
-    const items = cart.map(ci => {
-        const p = products.find(pr => pr.id === ci.productId);
-        subtotal += p.price * ci.qty;
-        return { ...ci, name: p.name, emoji: p.emoji, price: p.price };
-    });
-    // ✅ FREE DELIVERY on orders over RWF 15,000
-    const FREE_DELIVERY_THRESHOLD = 15000;
-    const delivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : 1500;
-    const total = subtotal + delivery;
-
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div class="checkout-layout">
-            <div>
-                <h2 style="margin-bottom:var(--gap-md);font-size:1.3rem">Checkout — ${store.name.replace('Patel ','')}</h2>
-
-                ${isGuest ? `
-                <div class="card" style="margin-bottom:var(--gap-md)">
-                    <div class="card-body">
-                        <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:10px;font-size:0.95rem">Your Details</h3>
-                        <p style="color:var(--slate);font-size:0.82rem;margin-bottom:var(--gap-md)">Guest checkout. <a href="#" onclick="navigate('login');return false">Sign in</a> for faster checkout.</p>
-                        <div class="form-row">
-                            <div class="form-group"><label>Full Name *</label><input type="text" class="form-input" id="checkout-name" placeholder="Your full name"></div>
-                            <div class="form-group"><label>Phone *</label><input type="tel" class="form-input" id="checkout-phone" placeholder="+250 7XX XXX XXX"></div>
-                        </div>
-                        <div class="form-group"><label>Email</label><input type="email" class="form-input" id="checkout-email" placeholder="your@email.com (optional)"></div>
-                        <div class="form-group"><label>Delivery Address *</label><textarea class="form-input" id="checkout-address" rows="2" placeholder="Your address in Kigali"></textarea></div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Locations</h4>
+                        <p>Patel Supermarket — KN 82 St</p>
+                        <p>Patel Grocers — KN 14 Ave</p>
+                        <p>Patel Shop — Kicukiro</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Hours</h4>
+                        <p>Supermarket: 8AM – 8PM Daily</p>
+                        <p>Grocers & Shop: 8AM – 10PM Daily</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Contact</h4>
+                        <p>📱 Supermarket: +250 788 836 076</p>
+                        <p>📱 Grocers: +250 783 335 971</p>
+                        <p>📱 Shop: +250 791 500 812</p>
+                        <p style="margin-top:6px;color:#F5D06B">💬 Message us on WhatsApp!</p>
+                        <p>patelgrocersrwanda@gmail.com</p>
                     </div>
                 </div>
-                ` : `
-                <div class="card" style="margin-bottom:var(--gap-md)">
-                    <div class="card-body">
-                        <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:10px;font-size:0.95rem">Delivery Address</h3>
-                        <div class="form-group"><label>Address</label><textarea class="form-input" id="checkout-address" rows="2">${user.address || ''}</textarea></div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Phone</label><input type="tel" class="form-input" id="checkout-phone" value="${user.phone || ''}"></div>
-                            <div class="form-group"><label>Email</label><input type="email" class="form-input" id="checkout-email" value="${user.email || ''}"></div>
-                        </div>
-                    </div>
-                </div>
-                `}
-
-                <div class="card" style="margin-bottom:var(--gap-md)">
-                    <div class="card-body">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;font-weight:600">
-                            <input type="checkbox" id="business-toggle" onchange="toggleBusinessFields()" style="width:16px;height:16px">
-                            🏢 Ordering for a business? (for TIN invoice)
-                        </label>
-                        <div id="business-fields" style="display:none;margin-top:12px">
-                            <div class="form-group"><label>Business Name</label><input type="text" class="form-input" id="checkout-business-name" placeholder="Company / business name"></div>
-                            <div class="form-group"><label>TIN Number</label><input type="text" class="form-input" id="checkout-tin" placeholder="Tax Identification Number"></div>
-                            <p style="font-size:0.75rem;color:var(--slate);margin-top:2px">These will appear on your invoice for tax purposes.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card" style="margin-bottom:var(--gap-md)">
-                    <div class="card-body">
-                        <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:10px;font-size:0.95rem">Payment Method</h3>
-                        <div class="payment-options">
-                            <label class="payment-option selected" onclick="selectPayment(this,'mtn')">
-                                <input type="radio" name="payment" value="mtn" checked>
-                                <span class="payment-icon">📱</span>
-                                <div><div class="payment-label">MTN Mobile Money</div><div class="payment-desc">Send to MoMo Pay code</div></div>
-                            </label>
-                            <label class="payment-option" onclick="selectPayment(this,'cod')">
-                                <input type="radio" name="payment" value="cod">
-                                <span class="payment-icon">💵</span>
-                                <div><div class="payment-label">Cash on Delivery</div><div class="payment-desc">Pay when you receive</div></div>
-                            </label>
-                        </div>
-                        <div id="momo-fields" style="margin-top:var(--gap-md)">
-                            <div style="background:var(--cream);border:2px solid var(--saffron-light);border-radius:var(--radius-md);padding:var(--gap-md);margin-bottom:var(--gap-md)">
-                                <div style="font-weight:700;margin-bottom:6px;font-size:0.9rem">📱 Send <span style="color:var(--forest)">${formatRWF(total)}</span> to:</div>
-                                <div style="background:white;border-radius:var(--radius-md);padding:12px;border:1px solid var(--cream-dark)">
-                                    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--slate);margin-bottom:3px">MoMo Pay Code</div>
-                                    <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:700;color:var(--coffee);letter-spacing:3px">${STORE_MOMO_CODES[storeId] || '004305'}</div>
-                                    <div style="font-size:0.78rem;color:var(--slate);margin-top:2px">Dial: <b>*182*8*1*${STORE_MOMO_CODES[storeId] || '004305'}#</b></div>
-                                </div>
-                                <div style="font-size:0.75rem;color:var(--light-slate);margin-top:8px">After sending, upload a screenshot below.</div>
-                            </div>
-                            <div class="form-group"><label>Your MoMo Number</label><input type="tel" class="form-input" id="momo-number" placeholder="07X XXX XXXX"></div>
-                            <div class="form-group">
-                                <label>Payment Screenshot *</label>
-                                <div class="upload-zone" id="proof-upload-zone" onclick="document.getElementById('proof-file').click()">
-                                    <div class="upload-icon">📸</div>
-                                    <p>Tap to upload screenshot</p>
-                                    <p class="upload-hint">JPG, PNG — max 2MB</p>
-                                </div>
-                                <input type="file" id="proof-file" accept="image/*" style="display:none" onchange="previewPaymentProof(this)">
-                                <div id="proof-preview" style="display:none;margin-top:8px;position:relative">
-                                    <img id="proof-preview-img" class="upload-preview" style="width:160px;height:auto;max-height:240px">
-                                    <button class="btn btn-ghost btn-sm" style="position:absolute;top:2px;right:2px;background:white" onclick="clearPaymentProof()">✕</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary btn-full" style="padding:14px;font-size:0.95rem;border-radius:var(--radius-md)" onclick="placeOrder('${storeId}',${total})">
-                    Place Order — ${formatRWF(total)}
-                </button>
-            </div>
-            <div class="checkout-summary">
-                <h3 style="margin-bottom:12px">Order Summary</h3>
-                ${items.map(it => `
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--cream-dark)">
-                        <div style="display:flex;gap:10px;align-items:flex-start;min-width:0">
-                            <span style="background:var(--forest);color:white;font-size:0.72rem;font-weight:700;min-width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${it.qty}×</span>
-                            <div style="min-width:0">
-                                <div style="font-size:0.88rem;color:var(--coffee);font-weight:500;line-height:1.3">${it.name}</div>
-                                <div style="font-size:0.75rem;color:var(--light-slate);margin-top:1px">${formatRWF(it.price)} each</div>
-                            </div>
-                        </div>
-                        <div style="font-weight:600;color:var(--coffee);white-space:nowrap;font-size:0.88rem">${formatRWF(it.price * it.qty)}</div>
-                    </div>
-                `).join('')}
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 4px">
-                    <span style="color:var(--slate);font-size:0.88rem">Subtotal</span>
-                    <span style="color:var(--coffee);font-size:0.88rem">${formatRWF(subtotal)}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
-                    <span style="color:var(--slate);font-size:0.88rem">Delivery fee</span>
-                    <span style="font-size:0.88rem">${delivery === 0 ? '<b style="color:var(--forest)">FREE</b>' : formatRWF(delivery)}</span>
-                </div>
-                ${delivery === 0 ? '' : `<div style="font-size:0.75rem;color:var(--forest);background:var(--cream-light);border-radius:6px;padding:6px 8px;margin:4px 0">Add ${formatRWF(15000 - subtotal)} more to get FREE delivery</div>`}
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;margin-top:6px;border-top:2px solid var(--cream-dark)">
-                    <span style="font-weight:700;font-size:1.05rem;color:var(--coffee)">Total</span>
-                    <span style="font-weight:800;font-size:1.15rem;color:var(--forest)">${formatRWF(total)}</span>
+                <div class="footer-bottom">
+                    <span>&copy; 2026 Patel Stores Ltd. All rights reserved. &nbsp;·&nbsp; <a href="/privacy.html" style="color:rgba(255,255,255,0.5);text-decoration:none;">Privacy Policy</a></span>
+                    <a href="#" onclick="navigate('staff-login');return false">Staff Portal</a>
                 </div>
             </div>
-        </div>
-    `;
-}
+        </footer>
+    </div>
 
-let selectedPayment = 'mtn';
-let paymentProofData = null;
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="supabase-config.js?v=20260716c"></script>
+    <script src="data.js?v=20260716c"></script>
+    <script src="store.js?v=20260716c"></script>
+    <script src="router.js?v=20260716c"></script>
+    <script src="components.js?v=20260716c"></script>
+    <script src="pages-customer.js?v=20260716c"></script>
+    <script src="pages-admin.js?v=20260716c"></script>
+    <script src="pages-driver.js?v=20260716c"></script>
+    <script src="app.js?v=20260716c"></script>
 
-function toggleBusinessFields() {
-    const checked = document.getElementById('business-toggle').checked;
-    document.getElementById('business-fields').style.display = checked ? 'block' : 'none';
-}
-
-function selectPayment(el, method) {
-    selectedPayment = method;
-    document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('momo-fields').style.display = method === 'cod' ? 'none' : 'block';
-}
-
-function previewPaymentProof(input) {
-    const file = input.files[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { showToast('Screenshot must be under 2MB', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        paymentProofData = e.target.result;
-        document.getElementById('proof-preview-img').src = e.target.result;
-        document.getElementById('proof-preview').style.display = 'block';
-        document.getElementById('proof-upload-zone').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-}
-
-function clearPaymentProof() {
-    paymentProofData = null;
-    document.getElementById('proof-preview').style.display = 'none';
-    document.getElementById('proof-upload-zone').style.display = '';
-    document.getElementById('proof-file').value = '';
-}
-
-async function placeOrder(storeId, total) {
-    try {
-        const user = Store.getCurrentUser();
-        const isGuest = !user || user.role !== 'customer';
-        const address = document.getElementById('checkout-address').value.trim();
-        const phone = document.getElementById('checkout-phone').value.trim();
-        const email = document.getElementById('checkout-email').value.trim();
-
-        // ✅ VALIDATION
-        if (isGuest) {
-            const name = document.getElementById('checkout-name').value.trim();
-            if (!name) return showToast('Please enter your name', 'error');
-            if (!phone) return showToast('Please enter your phone number', 'error');
-            if (!address) return showToast('Please enter a delivery address', 'error');
-        } else {
-            if (!phone) return showToast('Please enter your phone number', 'error');
-            if (!address) return showToast('Please enter a delivery address', 'error');
-        }
-        
-        if (selectedPayment !== 'cod' && !paymentProofData) {
-            return showToast('Please upload your payment screenshot', 'error');
-        }
-
-        const cart = Store.getCart(storeId);
-        if (!cart || cart.length === 0) return showToast('Your cart is empty', 'error');
-
-        const products = Store.getProducts();
-        const items = cart.map(ci => {
-            const p = products.find(pr => pr.id === ci.productId);
-            if (!p) throw new Error('Product not found: ' + ci.productId);
-            return { productId: ci.productId, name: p.name, emoji: p.emoji, price: p.price, qty: ci.qty, image: p.image || (p.images && p.images[0]) || null };
+    <!-- Nuke old service workers and cache -->
+    <script>
+    if ('serviceWorker' in navigator) {
+      // Unregister ALL old service workers first
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        registrations.forEach(function(reg) { reg.unregister(); });
+      });
+      // Clear ALL caches
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          names.forEach(function(name) { caches.delete(name); });
         });
-        
-        const orderId = 'ORD-' + String(2000 + Math.floor(Math.random() * 8000));
-        const store = STORES.find(s => s.id === storeId);
-        if (!store) throw new Error('Store not found');
-        
-        const customerName = isGuest ? document.getElementById('checkout-name').value.trim() : user.name;
-
-        // ✅ Business / TIN fields (optional)
-        const businessToggle = document.getElementById('business-toggle');
-        const isBusiness = businessToggle && businessToggle.checked;
-        const businessName = isBusiness ? (document.getElementById('checkout-business-name').value.trim() || null) : null;
-        const tinNumber = isBusiness ? (document.getElementById('checkout-tin').value.trim() || null) : null;
-
-        const order = {
-            id: orderId, 
-            customerId: isGuest ? null : user.id, 
-            customerName, 
-            customerEmail: email,
-            customerPhone: phone, 
-            customerAddress: address, 
-            businessName,
-            tinNumber,
-            storeId, 
-            storeName: store.name,
-            items, 
-            total, 
-            paymentMethod: selectedPayment,
-            paymentProof: selectedPayment !== 'cod' ? paymentProofData : null,
-            paymentVerified: selectedPayment === 'cod', 
-            status: selectedPayment === 'cod' ? 'pending' : 'awaiting-payment',
-            driverId: null,
-            created_at: new Date().toISOString()
-        };
-        
-        // ✅ ADD ORDER WITH ERROR HANDLING
-        await Store.addOrder(order);
-        if (!order) throw new Error('Failed to create order');
-        
-        Store.clearCart(storeId);
-        paymentProofData = null;
-        selectedPayment = 'mtn'; // Reset to default
-        updateNav();
-        showEmailPreview('order-confirmation', order);
-        setTimeout(() => navigate('order-success', { orderId }), 500);
-    } catch (err) {
-        console.error('Order error:', err);
-        showToast('Failed to place order: ' + err.message, 'error');
+      }
+      // Register new service worker after a delay
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          navigator.serviceWorker.register('/sw.js?v=20260424')
+            .then(reg => console.log('[PWA] SW registered', reg.scope))
+            .catch(err => console.warn('[PWA] SW failed', err));
+        }, 3000);
+      });
     }
-}
-
-function renderOrderSuccess(orderId) {
-    const order = Store.getOrders().find(o => o.id === orderId);
-    const isMomo = order && order.payment_method !== 'cod';
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div style="text-align:center;padding:var(--gap-xl) var(--gap-md)">
-            <div style="font-size:4rem;margin-bottom:var(--gap-sm)">🛒</div>
-            <h1 style="font-size:1.5rem">Order Placed!</h1>
-            <p style="color:var(--slate);font-size:0.9rem;margin:var(--gap-sm) auto;max-width:400px">
-                Your order <b>${orderId}</b> has been placed.
-                ${isMomo ? 'Payment screenshot is being reviewed.' : 'You\'ll pay cash on delivery.'}
-            </p>
-            <div style="display:flex;gap:10px;justify-content:center;margin-top:var(--gap-lg)">
-                <button class="btn btn-primary" onclick="navigate('my-orders')">View Orders</button>
-                <button class="btn btn-outline" onclick="navigate('home')">Continue Shopping</button>
-            </div>
-        </div>
-    `;
-}
-
-function renderMyOrders() {
-    const user = Store.getCurrentUser();
-    if (!user) return navigate('login');
-    const orders = Store.getOrders().filter(o => o.customer_id === user.id);
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div class="container" style="padding:var(--gap-lg) 12px;max-width:900px;margin:0 auto">
-            <h1 style="font-size:1.4rem">My Orders</h1>
-            <p style="color:var(--slate);margin-bottom:var(--gap-md);font-size:0.85rem">${orders.length} order${orders.length!==1?'s':''}</p>
-            ${orders.length === 0 ? '<div class="empty-state"><div class="empty-icon">📋</div><h3>No orders yet</h3><p>Place your first order!</p></div>' : ''}
-            ${orders.map(o => `
-                <div class="card" style="margin-bottom:8px">
-                    <div class="card-body" style="padding:12px">
-                        <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px">
-                            <div>
-                                <h3 style="font-family:var(--font-body);font-weight:700;font-size:0.9rem">${o.id}</h3>
-                                <div style="font-size:0.78rem;color:var(--slate)">${STORES.find(s => s.id === o.store_id)?.name || o.store_id} · ${formatDate(o.created_at)}</div>
-                            </div>
-                            <div style="text-align:right">
-                                ${statusTag(o.status)}
-                                <div style="font-weight:700;color:var(--forest);margin-top:2px;font-size:0.9rem">${formatRWF(o.total)}</div>
-                            </div>
-                        </div>
-                        <div style="margin-top:6px;font-size:0.78rem;color:var(--slate)">
-                            ${o.items.map(it => `${it.emoji} ${it.name} x${it.qty}`).join(' · ')}
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
-}
-
-// ═══════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════
-function renderLogin() {
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div class="auth-page">
-            <div class="auth-card">
-                <div class="auth-logo"><div class="logo-mark">P</div><span style="font-family:var(--font-display);font-size:1.2rem;color:var(--coffee)">Patel Stores</span></div>
-                <h2 style="font-size:1.3rem">Welcome Back</h2>
-                <p class="auth-sub">Sign in to your account</p>
-                <div class="form-group"><label>Email</label><input type="email" class="form-input" id="login-email" placeholder="your@email.com"></div>
-                <div class="form-group"><label>Password</label><input type="password" class="form-input" id="login-password" placeholder="••••••••"></div>
-                <button class="btn btn-primary btn-full" onclick="doCustomerLogin()">Sign In</button>
-                <div class="auth-divider">or</div>
-                <button class="btn btn-outline btn-full" onclick="navigate('register')">Create an Account</button>
-            </div>
-        </div>
-    `;
-}
-
-async function doCustomerLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    if (!email || !password) return showToast('Please fill in all fields', 'error');
-    
-    try {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) return showToast(error.message, 'error');
-        const customer = Store.getCustomers().find(c => c.id === data.user.id);
-        if (!customer) return showToast('Customer record not found.', 'error');
-        
-        // ✅ ADMIN DETECTED (by database role) → redirect to staff portal
-        if (customer.role === 'admin') {
-            await sb.auth.signOut();
-            showAdminRedirectMessage();
-            return;
-        }
-        
-        Store.setCurrentUser({ ...customer, role: 'customer' });
-        await Store.loadMyOrders(customer.id);   // load this customer's orders
-        showToast('Welcome back, ' + customer.name + '!');
-        navigate('home');
-    } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
-}
-
-// ✅ NEW FUNCTION: SHOW ADMIN REDIRECT MESSAGE
-function showAdminRedirectMessage() {
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div class="auth-page">
-            <div class="auth-card" style="text-align:center;max-width:400px">
-                <div style="font-size:3rem;margin-bottom:var(--gap-md)">👤</div>
-                <h2 style="font-size:1.3rem;color:var(--coffee)">Admin Account Detected</h2>
-                <p class="auth-sub" style="margin-bottom:var(--gap-lg)">
-                    This is an admin account. Please use the staff portal to login.
-                </p>
-                
-                <button class="btn btn-primary btn-full" onclick="window.location.href='/admin-portal.html'" style="margin-bottom:var(--gap-md)">
-                    Go to Staff Portal →
-                </button>
-                
-                <button class="btn btn-outline btn-full" onclick="navigate('login')">
-                    Back to Customer Login
-                </button>
-                
-                <div style="margin-top:var(--gap-lg);padding:var(--gap-md);background:var(--cream-light);border-radius:8px;font-size:0.85rem;color:var(--slate)">
-                    <strong>💡 Tip:</strong> Staff members should use the staff portal for admin access.
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function renderRegister() {
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div class="auth-page">
-            <div class="auth-card">
-                <div class="auth-logo"><div class="logo-mark">P</div><span style="font-family:var(--font-display);font-size:1.2rem;color:var(--coffee)">Patel Stores</span></div>
-                <h2 style="font-size:1.3rem">Create Account</h2>
-                <p class="auth-sub">Join Patel Stores today</p>
-                <div class="form-row">
-                    <div class="form-group"><label>First Name</label><input type="text" class="form-input" id="reg-first" placeholder="Jean"></div>
-                    <div class="form-group"><label>Last Name</label><input type="text" class="form-input" id="reg-last" placeholder="Baptiste"></div>
-                </div>
-                <div class="form-group"><label>Email</label><input type="email" class="form-input" id="reg-email" placeholder="your@email.com"></div>
-                <div class="form-group"><label>Phone</label><input type="tel" class="form-input" id="reg-phone" placeholder="+250 7XX XXX XXX"></div>
-                <div class="form-group"><label>Delivery Address</label><textarea class="form-input" id="reg-address" rows="2" placeholder="Your address in Kigali"></textarea></div>
-                <div class="form-group"><label>Password</label><input type="password" class="form-input" id="reg-password" placeholder="Minimum 6 characters"></div>
-                <button class="btn btn-primary btn-full" onclick="doRegister()">Create Account</button>
-                <div style="text-align:center;margin-top:var(--gap-md)"><span style="font-size:0.85rem;color:var(--slate)">Have an account? </span><a href="#" onclick="navigate('login');return false">Sign In</a></div>
-            </div>
-        </div>
-    `;
-}
-
-async function doRegister() {
-    const first = document.getElementById('reg-first').value.trim();
-    const last = document.getElementById('reg-last').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-    const address = document.getElementById('reg-address').value.trim();
-    const password = document.getElementById('reg-password').value;
-    if (!first || !last || !email || !phone || !password) return showToast('Please fill in all fields', 'error');
-    if (password.length < 6) return showToast('Password must be at least 6 characters', 'error');
-    try {
-        const { data: authData, error: authError } = await sb.auth.signUp({ email, password });
-        if (authError) return showToast(authError.message, 'error');
-        const customer = await Store.addCustomer({ id: authData.user.id, name: first + ' ' + last, email, phone, address });
-        Store.setCurrentUser({ ...customer, role: 'customer' });
-        showToast('Welcome, ' + customer.name + '!');
-        navigate('home');
-    } catch (err) { showToast('Registration failed: ' + err.message, 'error'); }
-}
-
-function renderStaffLogin() {
-    const container = document.getElementById('page-container');
-    container.innerHTML = `
-        <div class="auth-page" style="background:var(--coffee)">
-            <div class="auth-card">
-                <div class="auth-logo"><div class="logo-mark">P</div><span style="font-family:var(--font-display);font-size:1.2rem;color:var(--coffee)">Staff Portal</span></div>
-                <h2 style="font-size:1.2rem">Staff Sign In</h2>
-                <p class="auth-sub">Admin or Driver access only</p>
-                <div class="tabs" style="margin-bottom:var(--gap-md)">
-                    <button class="tab active" onclick="switchStaffTab('admin',this)">Admin</button>
-                    <button class="tab" onclick="switchStaffTab('driver',this)">Driver</button>
-                </div>
-                <div id="staff-form-admin">
-                    <div class="form-group"><label>Email</label><input type="email" class="form-input" id="staff-email" placeholder="your@email.com"></div>
-                    <div class="form-group"><label>Password</label><input type="password" class="form-input" id="staff-password" placeholder="••••••••"></div>
-                    <button class="btn btn-primary btn-full" onclick="doStaffLogin('admin')">Sign In as Admin</button>
-                </div>
-                <div id="staff-form-driver" style="display:none">
-                    <div class="form-group"><label>Email</label><input type="email" class="form-input" id="driver-email" placeholder="your@email.com"></div>
-                    <div class="form-group"><label>Password</label><input type="password" class="form-input" id="driver-password" placeholder="••••••••"></div>
-                    <button class="btn btn-secondary btn-full" onclick="doStaffLogin('driver')">Sign In as Driver</button>
-                </div>
-                <div style="text-align:center;margin-top:var(--gap-md)"><a href="#" onclick="navigate('login');return false" style="font-size:0.82rem;color:var(--slate)">← Back to Customer Login</a></div>
-            </div>
-        </div>
-    `;
-}
-
-function switchStaffTab(tab, el) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('staff-form-admin').style.display = tab === 'admin' ? '' : 'none';
-    document.getElementById('staff-form-driver').style.display = tab === 'driver' ? '' : 'none';
-}
-
-async function doStaffLogin(role) {
-    if (role === 'admin') {
-        const email = document.getElementById('staff-email').value.trim();
-        const password = document.getElementById('staff-password').value;
-        if (!email || !password) return showToast('Please fill in all fields', 'error');
-        try {
-            const { data, error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) return showToast('Invalid credentials', 'error');
-            // Verify admin role from database (RLS lets a user read their own row)
-            const { data: rows } = await sb.from('customers').select('*').eq('id', data.user.id).limit(1);
-            const customer = rows && rows[0];
-            if (!customer || customer.role !== 'admin') { await sb.auth.signOut(); return showToast('Access denied.', 'error'); }
-            Store.setCurrentUser({ ...customer, role: 'admin' });
-            await Store.loadSensitiveData('admin');   // load orders/customers/drivers now
-            showToast('Welcome, Admin!');
-            navigate('admin');
-        } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
-    } else {
-        const email = document.getElementById('driver-email').value.trim();
-        const password = document.getElementById('driver-password').value;
-        if (!email || !password) return showToast('Please fill in all fields', 'error');
-        try {
-            // ✅ Drivers now authenticate via Supabase Auth (no plaintext password in browser)
-            const { data, error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) return showToast('Invalid driver credentials', 'error');
-            // Verify driver role from drivers table (RLS lets a driver read their own row)
-            const { data: rows } = await sb.from('drivers').select('*').eq('id', data.user.id).limit(1);
-            const driver = rows && rows[0];
-            if (!driver) { await sb.auth.signOut(); return showToast('Access denied.', 'error'); }
-            Store.setCurrentUser({ ...driver, role: 'driver' });
-            await Store.loadSensitiveData('driver');   // load assigned orders now
-            showToast(`Welcome, ${driver.name}!`);
-            navigate('driver');
-        } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
-    }
-}
+    </script>
+</body>
+</html>
