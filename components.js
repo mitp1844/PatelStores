@@ -13,6 +13,100 @@ function esc(s) {
     ));
 }
 
+/**
+ * Refresh every cart-count badge on screen in place, without a full re-render.
+ * The regular nav badge only exists once main-nav is visible (updateNav() hides
+ * it on the home route), and the home hero has its own separate cart button/badge
+ * baked into renderHome()'s markup — both need to be patched directly here so
+ * adding/removing an item is reflected immediately everywhere.
+ */
+function updateCartBadges() {
+    const count = Store.getTotalCartCount();
+
+    const navCart = document.querySelector('#main-nav .nav-cart');
+    if (navCart) {
+        let badge = navCart.querySelector('.badge');
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'badge';
+                navCart.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+
+    const heroCart = document.querySelector('.mk-hero-cart');
+    if (heroCart) {
+        let badge = heroCart.querySelector('.mk-cart-badge');
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'mk-cart-badge';
+                heroCart.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+}
+
+// ═══════════════════════════════════════════
+// FLOATING CART BAR — persistent bottom pill shown while
+// browsing (home/store/product) so the cart is always one tap away.
+// ═══════════════════════════════════════════
+function renderFloatingCart() {
+    updateCartBadges();
+
+    let bar = document.getElementById('mk-float-cart');
+
+    const user = Store.getCurrentUser();
+    const isStaff = user && (user.role === 'admin' || user.role === 'driver');
+    const showOnRoutes = ['home', 'store', 'product'];
+    const storeId = (typeof selectedStoreId !== 'undefined' && selectedStoreId) || (STORES[0] && STORES[0].id);
+    const shouldShow = !isStaff && showOnRoutes.includes(currentRoute) && storeId;
+
+    const cart = shouldShow ? Store.getCart(storeId) : [];
+    const pageContainer = document.getElementById('page-container');
+
+    if (!shouldShow || cart.length === 0) {
+        if (bar) bar.remove();
+        if (pageContainer) pageContainer.classList.remove('has-float-cart');
+        return;
+    }
+    if (pageContainer) pageContainer.classList.add('has-float-cart');
+
+    const products = Store.getProducts();
+    let count = 0, total = 0;
+    cart.forEach(ci => {
+        const p = products.find(pr => pr.id === ci.productId);
+        if (!p) return;
+        count += ci.qty;
+        total += p.price * ci.qty;
+    });
+
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'mk-float-cart';
+        bar.className = 'mk-float-cart';
+        bar.onclick = () => navigate('cart');
+        document.body.appendChild(bar);
+    }
+    bar.innerHTML = `
+        <div class="mk-float-cart-info">
+            <span class="mk-float-cart-count">${count} item${count !== 1 ? 's' : ''} in cart</span>
+            <span class="mk-float-cart-total">${formatRWF(total)}</span>
+        </div>
+        <button class="mk-float-cart-btn" onclick="event.stopPropagation();navigate('cart')">
+            View Cart
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+    `;
+}
+
 function updateNav() {
     const user = Store.getCurrentUser();
     const isAdmin = user && user.role === 'admin';
