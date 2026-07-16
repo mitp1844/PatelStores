@@ -453,6 +453,27 @@ const Store = {
         localStorage.removeItem('patel_currentUser');
     },
 
+    /**
+     * Re-fetch the tables a role needs right after login, now that the
+     * request carries an authenticated session (RLS may return more/different
+     * rows than the pre-login anonymous fetch in init() did).
+     */
+    async loadSensitiveData(role) {
+        if (role === 'admin') {
+            await Promise.all([this.refreshOrders(), this.refreshCustomers(), this.refreshDrivers()]);
+        } else if (role === 'driver') {
+            await this.refreshOrders();
+        }
+    },
+
+    /**
+     * Re-fetch orders right after a customer logs in, so their own order
+     * history (RLS-scoped to their account) is up to date in the cache.
+     */
+    async loadMyOrders(customerId) {
+        await this.refreshOrders();
+    },
+
     // ─── CATEGORIES ─────────────────────────────
 
     /** Get all categories (sync, from cache). */
