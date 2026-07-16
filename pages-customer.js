@@ -26,6 +26,11 @@ function renderHome() {
     const allProducts = Store.getProducts().filter(p => p.stores && p.stores.includes(selectedStoreId));
     const categories = Store.getCategories().filter(c => c.id !== 'all');
 
+    // User + cart for the in-hero action buttons
+    const user = Store.getCurrentUser();
+    const isCustomer = user && user.role === 'customer';
+    const cartCount = Store.getTotalCartCount();
+
     window._allHomeProducts = allProducts;
     window._homeStoreId = selectedStoreId;
     window._loadMoreOffset = 100;
@@ -76,8 +81,14 @@ function renderHome() {
                         </select>
                     </div>
                 </div>
-                <div class="mk-hero-search-btn" onclick="document.getElementById('home-search').focus()">
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <div class="mk-hero-actions">
+                    <button class="mk-hero-cart" onclick="navigate('cart')" aria-label="Cart">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.4 12.3a1 1 0 0 0 1 .7h8.7a1 1 0 0 0 1-.8L21 7H6"/></svg>
+                        ${cartCount > 0 ? `<span class="mk-cart-badge">${cartCount}</span>` : ''}
+                    </button>
+                    ${isCustomer
+                        ? `<button class="mk-hero-avatar" onclick="navigate('my-orders')" title="${esc(user.name)}">${esc(user.name.charAt(0))}</button>`
+                        : `<button class="mk-hero-signin" onclick="navigate('login')">Sign In</button>`}
                 </div>
             </div>
             <div class="mk-hero-copy">
