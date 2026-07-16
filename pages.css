@@ -930,3 +930,71 @@
 @media (hover: none) {
     .mk-scroll-arrow { display: none !important; }
 }
+
+/* ═══════════════════════════════════════════
+   MARKET CART — modern cart page
+   ═══════════════════════════════════════════ */
+.mkc-page { max-width: 620px; margin: 0 auto; padding: 16px 16px 40px; }
+.mkc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.mkc-back {
+    width: 40px; height: 40px; border-radius: 12px; background: #fff;
+    border: 1px solid var(--cream-dark); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; flex-shrink: 0;
+}
+.mkc-header h1 { font-family: var(--font-display); font-size: 24px; font-weight: 400; color: var(--coffee); }
+
+.mkc-store-block {
+    background: #fff; border: 1px solid var(--cream-dark); border-radius: 22px;
+    padding: 16px; margin-bottom: 18px;
+}
+.mkc-store-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.mkc-store-name { font-family: var(--font-display); font-size: 17px; color: var(--coffee); }
+.mkc-store-count { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--cream); padding: 4px 10px; border-radius: 10px; }
+
+.mkc-free { background: var(--cream); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+.mkc-free-text { font-size: 12.5px; color: var(--coffee); margin-bottom: 7px; }
+.mkc-free-text b { color: var(--forest); }
+.mkc-free-bar { height: 6px; background: var(--cream-dark); border-radius: 4px; overflow: hidden; }
+.mkc-free-fill { height: 100%; background: var(--forest); border-radius: 4px; transition: width .4s ease; }
+.mkc-free-done { background: #eef6f0; color: var(--forest); font-size: 13px; font-weight: 700; text-align: center; }
+
+.mkc-items { display: flex; flex-direction: column; }
+.mkc-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--cream); }
+.mkc-item:last-child { border-bottom: none; }
+.mkc-item-img {
+    width: 66px; height: 66px; border-radius: 14px; overflow: hidden; flex-shrink: 0;
+    background: #f6f3ee; display: flex; align-items: center; justify-content: center; font-size: 30px;
+}
+.mkc-item-img img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+.mkc-item-info { flex: 1; min-width: 0; }
+.mkc-item-info h4 { font-size: 14px; font-weight: 600; color: var(--coffee); line-height: 1.3; margin-bottom: 2px; }
+.mkc-item-unit { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.mkc-item-line { font-size: 15px; font-weight: 800; color: var(--forest); }
+.mkc-item-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; }
+.mkc-remove { background: none; border: none; color: var(--light-slate); font-size: 15px; cursor: pointer; padding: 2px; }
+.mkc-qty { display: flex; align-items: center; gap: 8px; background: var(--cream); border-radius: 12px; padding: 5px 8px; }
+.mkc-qty button {
+    width: 26px; height: 26px; border: none; background: #fff; border-radius: 8px;
+    font-size: 16px; font-weight: 700; color: var(--forest); cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; align-items: center; justify-content: center;
+}
+.mkc-qty span { font-weight: 700; font-size: 14px; min-width: 16px; text-align: center; color: var(--coffee); }
+
+.mkc-summary { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--cream-dark); }
+.mkc-sline { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; color: var(--muted); }
+.mkc-total { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--cream-dark); font-weight: 800; font-size: 17px; color: var(--coffee); }
+.mkc-total span:last-child { color: var(--forest); }
+
+.mkc-checkout-btn {
+    width: 100%; margin-top: 14px; height: 52px; border: none; border-radius: 16px;
+    background: var(--forest); color: #fff; font-family: var(--font-body);
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 8px 20px rgba(45,106,79,.35); transition: transform .12s ease;
+}
+.mkc-checkout-btn:active { transform: scale(.98); }
+
+.mkc-empty { text-align: center; padding: 60px 20px; }
+.mkc-empty-icon { font-size: 56px; margin-bottom: 12px; }
+.mkc-empty h3 { font-family: var(--font-display); font-size: 22px; color: var(--coffee); margin-bottom: 6px; }
+.mkc-empty p { font-size: 14px; color: var(--muted); }
