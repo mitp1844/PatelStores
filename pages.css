@@ -770,15 +770,25 @@
     transition: font-size .3s var(--ease-out);
 }
 .mk-hero-top.scrolled .mk-hero-brand h1 { font-size: 18px; margin-bottom: 2px; }
-.mk-hero-loc { display: flex; align-items: center; gap: 4px; }
+.mk-hero-loc {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    padding: 5px 10px 5px 8px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+.mk-hero-loc:hover, .mk-hero-loc:active { background: rgba(255,255,255,.25); }
 .mk-loc-pin { font-size: 12px; }
 .mk-store-select {
     background: transparent; border: none; color: #fff;
     font-family: var(--font-body); font-size: 13px; font-weight: 600;
-    opacity: .9; padding: 0; cursor: pointer; outline: none;
+    opacity: .95; padding: 0; cursor: pointer; outline: none;
     -webkit-appearance: none; appearance: none;
 }
 .mk-store-select option { color: #222; }
+.mk-loc-chevron { color: #fff; opacity: .85; flex-shrink: 0; }
 .mk-hero-actions { display: flex; align-items: center; gap: 10px; }
 .mk-hero-cart {
     position: relative; width: 44px; height: 44px; border-radius: 14px;
