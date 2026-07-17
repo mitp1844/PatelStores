@@ -79,12 +79,13 @@ function renderHome() {
             <div class="mk-hero-top">
                 <div class="mk-hero-brand">
                     <h1>Patel Stores</h1>
-                    <div class="mk-hero-loc">
+                    <label class="mk-hero-loc" for="store-picker" title="Tap to switch store">
                         <span class="mk-loc-pin">📍</span>
                         <select id="store-picker" onchange="switchStore(this.value)" class="mk-store-select">
                             ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
                         </select>
-                    </div>
+                        <svg class="mk-loc-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
+                    </label>
                 </div>
                 <div class="mk-hero-actions">
                     <button class="mk-hero-cart" onclick="navigate('cart')" aria-label="Cart">
