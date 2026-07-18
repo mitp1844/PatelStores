@@ -34,6 +34,7 @@ if (user) {
             } catch(e) {
                 navigate('home');
             }
+            maybeShowFlyerPopup();
         }
     } else {
         // Restore last visited page for guests too
@@ -54,6 +55,7 @@ if (user) {
         } catch(e) {
             navigate('home');
         }
+        maybeShowFlyerPopup();
     }
 
     // Scroll effect for nav (and the home hero's floating header, if present)
