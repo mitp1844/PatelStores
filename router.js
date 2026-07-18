@@ -27,6 +27,7 @@ const routes = {
     'admin-customer-detail': () => renderAdminCustomerDetail(routeParams.id),
     'admin-drivers': () => renderAdminDrivers(),
     'admin-analytics': () => renderAdminAnalytics(),
+    'admin-flyers': () => renderAdminFlyers(),
     // Driver
     'driver': () => renderDriverDashboard(),
 };
@@ -36,7 +37,7 @@ function navigate(route, params = {}) {
     routeParams = params;
     // Save to localStorage so refresh restores the page
     try {
-       if (!['admin', 'admin-orders', 'admin-payments', 'admin-products', 'admin-categories', 'admin-customers', 'admin-customer-detail', 'admin-drivers', 'admin-analytics','driver','staff-login'].includes(route)) {
+       if (!['admin', 'admin-orders', 'admin-payments', 'admin-products', 'admin-categories', 'admin-customers', 'admin-customer-detail', 'admin-drivers', 'admin-analytics', 'admin-flyers','driver','staff-login'].includes(route)) {
             localStorage.setItem('patel_last_route', JSON.stringify({ route, params }));
         }
     } catch(e) {}
