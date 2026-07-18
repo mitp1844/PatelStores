@@ -742,10 +742,24 @@
     position: relative;
     height: 400px;
     margin: 0 0 -42px 0;
-    background:
-        linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 28%, rgba(0,0,0,.15) 58%, rgba(27,67,50,.9) 100%),
-        url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80') center/cover;
+    overflow: hidden;
+    background: #1B4332;
 }
+.mk-hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 28%, rgba(0,0,0,.15) 58%, rgba(27,67,50,.9) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+.mk-hero-slides { position: absolute; inset: 0; }
+.mk-hero-slide {
+    position: absolute; inset: 0;
+    background-position: center; background-size: cover;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+.mk-hero-slide.active { opacity: 1; }
 .mk-hero-top {
     position: fixed; top: 0; left: 0; right: 0;
     z-index: 120;
@@ -814,7 +828,7 @@
     font-size: 17px; font-weight: 800; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
 }
-.mk-hero-copy { position: absolute; bottom: 74px; left: 22px; right: 44px; color: #fff; }
+.mk-hero-copy { position: absolute; bottom: 74px; left: 22px; right: 44px; color: #fff; z-index: 2; }
 .mk-hero-eyebrow {
     font-size: 12px; font-weight: 700; letter-spacing: .1em;
     text-transform: uppercase; color: var(--saffron-light); margin-bottom: 10px;
