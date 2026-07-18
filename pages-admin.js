@@ -36,6 +36,9 @@ function adminShell(activeTab, content) {
                     <a class="sidebar-link ${activeTab==='flyers'?'active':''}" onclick="navigate('admin-flyers')">
                         <span class="sidebar-icon">📢</span> Flyers
                     </a>
+                    <a class="sidebar-link ${activeTab==='hero'?'active':''}" onclick="navigate('admin-hero')">
+                        <span class="sidebar-icon">🖼️</span> Hero Banner
+                    </a>
                 </div>
             </aside>
             <div class="admin-content">${content}</div>
@@ -1020,6 +1023,99 @@ async function toggleFlyerActive(flyerId, active) {
 async function deleteFlyerConfirm(flyerId) {
     if (!confirm('Delete this flyer?')) return;
     try { await Store.deleteFlyer(flyerId); showToast('Flyer removed'); renderAdminFlyers(); }
+    catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════
+// HERO BANNER (home page photo slideshow)
+// ═══════════════════════════════════════════
+function renderAdminHero() {
+    const photos = [...Store.getHeroPhotos()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+    const content = `
+        <div class="admin-header">
+            <div>
+                <h1 style="font-size:1.3rem">Hero Banner</h1>
+                <p style="color:var(--slate);font-size:0.85rem">Photos shown at the top of the home page. Add more than one and they'll slideshow automatically for every store.</p>
+            </div>
+        </div>
+
+        <div class="upload-zone" style="margin-bottom:var(--gap-md);padding:var(--gap-md)" onclick="document.getElementById('hero-photo-input').click()">
+            <div class="upload-icon">📷</div><p>Tap to add photos</p>
+        </div>
+        <input type="file" id="hero-photo-input" accept="image/*" multiple style="display:none" onchange="uploadHeroPhotos(this)">
+
+        <div id="admin-hero-list">
+            ${photos.map((p, i) => adminHeroPhotoCard(p, i, photos.length)).join('')}
+        </div>
+        ${photos.length === 0 ? '<div class="empty-state"><div class="empty-icon">🖼️</div><h3>No hero photos yet</h3><p>The site is showing a default photo until you add your own.</p></div>' : ''}
+    `;
+    document.getElementById('page-container').innerHTML = adminShell('hero', content);
+}
+
+function adminHeroPhotoCard(p, i, total) {
+    return `
+        <div class="card" style="margin-bottom:8px">
+            <div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
+                <img src="${p.image}" style="width:64px;height:64px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0">
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:0.78rem;font-weight:600;color:${p.active ? 'var(--forest)' : 'var(--light-slate)'}">${p.active ? '● Active' : '○ Inactive'}</div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0">
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" ${i === 0 ? 'disabled' : ''} onclick="moveHeroPhoto('${p.id}',-1)">⬆️</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" ${i === total - 1 ? 'disabled' : ''} onclick="moveHeroPhoto('${p.id}',1)">⬇️</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="toggleHeroPhotoActive('${p.id}', ${!p.active})">${p.active ? '🙈' : '👁️'}</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="deleteHeroPhotoConfirm('${p.id}')">🗑️</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function uploadHeroPhotos(input) {
+    const files = Array.from(input.files);
+    input.value = '';
+    let added = 0;
+    for (const file of files) {
+        if (file.size > 2 * 1024 * 1024) { showToast(file.name + ' is over 2MB', 'error'); continue; }
+        try {
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            await Store.addHeroPhoto(dataUrl);
+            added++;
+        } catch (err) { showToast('Failed: ' + err.message, 'error'); }
+    }
+    if (added > 0) showToast(added + ' photo' + (added > 1 ? 's' : '') + ' added!');
+    renderAdminHero();
+}
+
+async function moveHeroPhoto(id, dir) {
+    const photos = [...Store.getHeroPhotos()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    const idx = photos.findIndex(p => p.id === id);
+    const swapIdx = idx + dir;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= photos.length) return;
+    const a = photos[idx], b = photos[swapIdx];
+    try {
+        await Promise.all([
+            Store.updateHeroPhoto(a.id, { sort_order: b.sort_order }),
+            Store.updateHeroPhoto(b.id, { sort_order: a.sort_order })
+        ]);
+        renderAdminHero();
+    } catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+async function toggleHeroPhotoActive(id, active) {
+    try { await Store.updateHeroPhoto(id, { active }); renderAdminHero(); }
+    catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+async function deleteHeroPhotoConfirm(id) {
+    if (!confirm('Delete this photo?')) return;
+    try { await Store.deleteHeroPhoto(id); showToast('Removed'); renderAdminHero(); }
     catch (err) { showToast('Failed: ' + err.message, 'error'); }
 }
 
