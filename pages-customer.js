@@ -4,6 +4,27 @@ const STORE_MOMO_CODES = {
     'shop': '051368'
 };
 
+// Fallback hero photo used until the admin uploads their own (Admin → Hero Banner)
+const DEFAULT_HERO_PHOTO = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80';
+
+let _heroSlideTimer = null;
+
+/** Advance the hero banner to the next photo; self-stops once the banner leaves the DOM. */
+function _tickHeroSlideshow() {
+    const wrap = document.querySelector('.mk-hero-slides');
+    if (!wrap) { clearInterval(_heroSlideTimer); _heroSlideTimer = null; return; }
+    const slides = wrap.querySelectorAll('.mk-hero-slide');
+    if (slides.length < 2) return;
+    const activeIdx = [...slides].findIndex(s => s.classList.contains('active'));
+    slides[activeIdx].classList.remove('active');
+    slides[(activeIdx + 1) % slides.length].classList.add('active');
+}
+
+function _updateHeroSlideshow(count) {
+    if (_heroSlideTimer) { clearInterval(_heroSlideTimer); _heroSlideTimer = null; }
+    if (count > 1) _heroSlideTimer = setInterval(_tickHeroSlideshow, 5000);
+}
+
 // Track selected store globally — default to grocers
 let selectedStoreId = localStorage.getItem('patel-selected-store') || 'grocers';
 
@@ -30,6 +51,10 @@ function renderHome() {
     const user = Store.getCurrentUser();
     const isCustomer = user && user.role === 'customer';
     const cartCount = Store.getTotalCartCount();
+
+    // Hero banner photos (Admin → Hero Banner) — falls back to the default photo until set
+    const activeHeroPhotos = Store.getActiveHeroPhotos();
+    const heroPhotos = activeHeroPhotos.length ? activeHeroPhotos.map(p => p.image) : [DEFAULT_HERO_PHOTO];
 
     window._allHomeProducts = allProducts;
     window._homeStoreId = selectedStoreId;
@@ -76,6 +101,9 @@ function renderHome() {
     container.innerHTML = `
         <!-- ═══ IMMERSIVE HERO ═══ -->
         <div class="mk-hero">
+            <div class="mk-hero-slides">
+                ${heroPhotos.map((url, i) => `<div class="mk-hero-slide ${i === 0 ? 'active' : ''}" style="background-image:url('${esc(url)}')"></div>`).join('')}
+            </div>
             <div class="mk-hero-top">
                 <div class="mk-hero-brand">
                     <h1>Patel Stores</h1>
@@ -188,6 +216,7 @@ function renderHome() {
             </div>
         </div>
     `;
+    _updateHeroSlideshow(heroPhotos.length);
 }
 
 // ── Helpers for curated home ──
