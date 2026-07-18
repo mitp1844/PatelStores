@@ -33,6 +33,9 @@ function adminShell(activeTab, content) {
                     <a class="sidebar-link ${activeTab==='analytics'?'active':''}" onclick="navigate('admin-analytics')">
                         <span class="sidebar-icon">📈</span> Analytics
                     </a>
+                    <a class="sidebar-link ${activeTab==='flyers'?'active':''}" onclick="navigate('admin-flyers')">
+                        <span class="sidebar-icon">📢</span> Flyers
+                    </a>
                 </div>
             </aside>
             <div class="admin-content">${content}</div>
@@ -818,6 +821,199 @@ async function deleteCategory(catId) {
     const count = Store.getProducts().filter(p => p.category === catId).length;
     if (count > 0 && !confirm(count + ' products will become uncategorized. Continue?')) return;
     try { await Store.removeCategory(catId); showToast('Removed'); renderAdminCategories(); }
+    catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════
+// FLYERS (popup shown to visitors on site open)
+// ═══════════════════════════════════════════
+let newFlyerImage = null;
+let editFlyerImage = null;
+
+function renderAdminFlyers() {
+    const flyers = [...Store.getFlyers()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+    const content = `
+        <div class="admin-header">
+            <div>
+                <h1 style="font-size:1.3rem">Flyers</h1>
+                <p style="color:var(--slate);font-size:0.85rem">Popups shown to visitors when they open the site</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="showAddFlyerForm()">+ Add</button>
+        </div>
+
+        <!-- ADD FLYER FORM -->
+        <div id="add-flyer-form" style="display:none;margin-bottom:var(--gap-md)">
+            <div class="card" style="border:2px solid var(--saffron)">
+                <div class="card-body" style="padding:14px">
+                    <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:var(--gap-sm);font-size:0.95rem">Add Flyer</h3>
+                    <div class="form-group"><label>Title (optional)</label><input type="text" class="form-input" id="new-flyer-title" placeholder="e.g. 20% Off This Weekend"></div>
+                    <div class="form-group"><label>Message</label><textarea class="form-input" id="new-flyer-body" rows="3" placeholder="Flyer text shown to visitors"></textarea></div>
+                    <div class="form-group">
+                        <label>Picture (optional)</label>
+                        <div id="new-flyer-image-preview"></div>
+                        <div class="upload-zone" style="margin-top:6px;padding:var(--gap-md)" onclick="document.getElementById('new-flyer-image').click()">
+                            <div class="upload-icon">📷</div><p>Tap to add a picture</p>
+                        </div>
+                        <input type="file" id="new-flyer-image" accept="image/*" style="display:none" onchange="previewNewFlyerImage(this)">
+                    </div>
+                    <label class="form-check" style="margin-bottom:var(--gap-sm)"><input type="checkbox" id="new-flyer-active" checked> Active (visible to visitors)</label>
+                    <div style="display:flex;gap:6px">
+                        <button class="btn btn-primary btn-sm" onclick="addNewFlyer()">Add Flyer</button>
+                        <button class="btn btn-ghost btn-sm" onclick="cancelAddFlyer()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT FLYER FORM -->
+        <div id="edit-flyer-form" style="display:none;margin-bottom:var(--gap-md)">
+            <div class="card" style="border:2px solid var(--saffron)">
+                <div class="card-body" style="padding:14px">
+                    <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:var(--gap-sm);font-size:0.95rem">✏️ Edit Flyer</h3>
+                    <input type="hidden" id="edit-flyer-id">
+                    <div class="form-group"><label>Title (optional)</label><input type="text" class="form-input" id="edit-flyer-title"></div>
+                    <div class="form-group"><label>Message</label><textarea class="form-input" id="edit-flyer-body" rows="3"></textarea></div>
+                    <div class="form-group">
+                        <label>Picture (optional)</label>
+                        <div id="edit-flyer-image-preview"></div>
+                        <div class="upload-zone" style="margin-top:6px;padding:var(--gap-md)" onclick="document.getElementById('edit-flyer-image').click()">
+                            <div class="upload-icon">📷</div><p>Change picture</p>
+                        </div>
+                        <input type="file" id="edit-flyer-image" accept="image/*" style="display:none" onchange="previewEditFlyerImage(this)">
+                    </div>
+                    <label class="form-check" style="margin-bottom:var(--gap-sm)"><input type="checkbox" id="edit-flyer-active"> Active (visible to visitors)</label>
+                    <div style="display:flex;gap:6px">
+                        <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveEditFlyer()">💾 Save</button>
+                        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-flyer-form').style.display='none'">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-flyers-list">
+            ${flyers.map(f => adminFlyerCard(f)).join('')}
+        </div>
+        ${flyers.length === 0 ? '<div class="empty-state"><div class="empty-icon">📢</div><h3>No flyers yet</h3><p>Add one to show visitors a popup when they open the site.</p></div>' : ''}
+    `;
+    document.getElementById('page-container').innerHTML = adminShell('flyers', content);
+}
+
+function adminFlyerCard(f) {
+    const img = f.image ? `<img src="${f.image}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:1.6rem">📢</span>`;
+    return `
+        <div class="card" style="margin-bottom:8px">
+            <div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
+                <div style="width:52px;height:52px;border-radius:var(--radius-sm);background:var(--cream);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                    ${img}
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;font-size:0.88rem;color:var(--coffee);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.title) || '(No title)'}</div>
+                    <div style="font-size:0.78rem;color:var(--slate);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.body)}</div>
+                    <div style="font-size:0.72rem;font-weight:600;color:${f.active ? 'var(--forest)' : 'var(--light-slate)'};margin-top:2px">${f.active ? '● Active' : '○ Inactive'}</div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0">
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="toggleFlyerActive('${f.id}', ${!f.active})">${f.active ? '🙈' : '👁️'}</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="showEditFlyerForm('${f.id}')">✏️</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="deleteFlyerConfirm('${f.id}')">🗑️</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showAddFlyerForm() {
+    document.getElementById('edit-flyer-form').style.display = 'none';
+    newFlyerImage = null;
+    document.getElementById('new-flyer-title').value = '';
+    document.getElementById('new-flyer-body').value = '';
+    document.getElementById('new-flyer-active').checked = true;
+    renderNewFlyerImagePreview();
+    document.getElementById('add-flyer-form').style.display = '';
+    document.getElementById('add-flyer-form').scrollIntoView({ behavior: 'smooth' });
+}
+function cancelAddFlyer() {
+    document.getElementById('add-flyer-form').style.display = 'none';
+    newFlyerImage = null;
+}
+function previewNewFlyerImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast(file.name + ' is over 2MB', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => { newFlyerImage = e.target.result; renderNewFlyerImagePreview(); };
+    reader.readAsDataURL(file);
+    input.value = '';
+}
+function renderNewFlyerImagePreview() {
+    const c = document.getElementById('new-flyer-image-preview'); if (!c) return;
+    c.innerHTML = newFlyerImage
+        ? `<div style="position:relative;display:inline-block;margin-top:6px"><img src="${newFlyerImage}" style="width:96px;height:96px;border-radius:8px;object-fit:cover;border:1px solid var(--cream-dark)"><button onclick="newFlyerImage=null;renderNewFlyerImagePreview()" style="position:absolute;top:-4px;right:-4px;background:var(--red);color:white;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:0.65rem;display:flex;align-items:center;justify-content:center">✕</button></div>`
+        : '';
+}
+
+async function addNewFlyer() {
+    const title = document.getElementById('new-flyer-title').value.trim();
+    const body = document.getElementById('new-flyer-body').value.trim();
+    const active = document.getElementById('new-flyer-active').checked;
+    if (!body && !newFlyerImage) return showToast('Add a message or a picture', 'error');
+    try {
+        await Store.addFlyer({ title, body, image: newFlyerImage, active });
+        newFlyerImage = null;
+        showToast('Flyer added!');
+        renderAdminFlyers();
+    } catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+function showEditFlyerForm(flyerId) {
+    const f = Store.getFlyers().find(x => x.id === flyerId); if (!f) return;
+    document.getElementById('add-flyer-form').style.display = 'none';
+    document.getElementById('edit-flyer-id').value = f.id;
+    document.getElementById('edit-flyer-title').value = f.title || '';
+    document.getElementById('edit-flyer-body').value = f.body || '';
+    document.getElementById('edit-flyer-active').checked = !!f.active;
+    editFlyerImage = f.image || null;
+    renderEditFlyerImagePreview();
+    document.getElementById('edit-flyer-form').style.display = '';
+    document.getElementById('edit-flyer-form').scrollIntoView({ behavior: 'smooth' });
+}
+function previewEditFlyerImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast(file.name + ' is over 2MB', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => { editFlyerImage = e.target.result; renderEditFlyerImagePreview(); };
+    reader.readAsDataURL(file);
+    input.value = '';
+}
+function renderEditFlyerImagePreview() {
+    const c = document.getElementById('edit-flyer-image-preview'); if (!c) return;
+    c.innerHTML = editFlyerImage
+        ? `<div style="position:relative;display:inline-block;margin-top:6px"><img src="${editFlyerImage}" style="width:96px;height:96px;border-radius:8px;object-fit:cover;border:1px solid var(--cream-dark)"><button onclick="editFlyerImage=null;renderEditFlyerImagePreview()" style="position:absolute;top:-4px;right:-4px;background:var(--red);color:white;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:0.65rem;display:flex;align-items:center;justify-content:center">✕</button></div>`
+        : '';
+}
+async function saveEditFlyer() {
+    const id = document.getElementById('edit-flyer-id').value;
+    const title = document.getElementById('edit-flyer-title').value.trim();
+    const body = document.getElementById('edit-flyer-body').value.trim();
+    const active = document.getElementById('edit-flyer-active').checked;
+    if (!body && !editFlyerImage) return showToast('Add a message or a picture', 'error');
+    try {
+        await Store.updateFlyer(id, { title, body, image: editFlyerImage, active });
+        showToast('Flyer updated!');
+        document.getElementById('edit-flyer-form').style.display = 'none';
+        renderAdminFlyers();
+    } catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+async function toggleFlyerActive(flyerId, active) {
+    try { await Store.updateFlyer(flyerId, { active }); renderAdminFlyers(); }
+    catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+async function deleteFlyerConfirm(flyerId) {
+    if (!confirm('Delete this flyer?')) return;
+    try { await Store.deleteFlyer(flyerId); showToast('Flyer removed'); renderAdminFlyers(); }
     catch (err) { showToast('Failed: ' + err.message, 'error'); }
 }
 
