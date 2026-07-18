@@ -540,21 +540,18 @@ const Store = {
 
     /**
      * Add a new flyer to Supabase and cache.
-     * If flyer.image is a base64 data URL, upload it to storage first.
+     * flyer.images may contain a mix of already-uploaded URLs and base64 data
+     * URLs (which get uploaded to storage first, one per file, no fixed cap).
      */
     async addFlyer(flyer) {
-        let imageUrl = null;
-        if (flyer.image && flyer.image.startsWith('data:')) {
-            const ext = flyer.image.match(/data:image\/(\w+)/)?.[1] || 'png';
-            const path = `flyers/${crypto.randomUUID()}.${ext}`;
-            imageUrl = await this.uploadFile('uploads', path, flyer.image);
-        }
+        const images = await this._resolveFlyerImages(flyer.images);
 
         const maxOrder = this._cache.flyers.reduce((m, f) => Math.max(m, f.sort_order || 0), 0);
         const row = {
             title: flyer.title || null,
             body: flyer.body || null,
-            image: imageUrl || flyer.image || null,
+            image: images[0] || null,
+            images,
             active: flyer.active !== false,
             sort_order: maxOrder + 1
         };
@@ -569,13 +566,12 @@ const Store = {
     /**
      * Update an existing flyer in Supabase and cache.
      * @param {string} id - Flyer UUID
-     * @param {object} updates - Fields to update
+     * @param {object} updates - Fields to update; updates.images (if present) may mix URLs and base64 data URLs.
      */
     async updateFlyer(id, updates) {
-        if (updates.image && updates.image.startsWith('data:')) {
-            const ext = updates.image.match(/data:image\/(\w+)/)?.[1] || 'png';
-            const path = `flyers/${id}.${ext}`;
-            updates.image = await this.uploadFile('uploads', path, updates.image);
+        if (updates.images) {
+            updates.images = await this._resolveFlyerImages(updates.images);
+            updates.image = updates.images[0] || null;
         }
 
         const { data, error } = await sb.from('flyers').update(updates).eq('id', id).select().single();
@@ -584,6 +580,22 @@ const Store = {
         const idx = this._cache.flyers.findIndex(f => f.id === id);
         if (idx >= 0) this._cache.flyers[idx] = data;
         return data;
+    },
+
+    /** Upload any base64 data URLs in a flyer images array, leaving existing URLs untouched. */
+    async _resolveFlyerImages(images) {
+        const list = Array.isArray(images) ? images : [];
+        const resolved = [];
+        for (const img of list) {
+            if (img && img.startsWith('data:')) {
+                const ext = img.match(/data:image\/(\w+)/)?.[1] || 'png';
+                const path = `flyers/${crypto.randomUUID()}.${ext}`;
+                resolved.push(await this.uploadFile('uploads', path, img));
+            } else if (img) {
+                resolved.push(img);
+            }
+        }
+        return resolved;
     },
 
     /**
