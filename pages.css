@@ -755,7 +755,7 @@
 .mk-hero-slides { position: absolute; inset: 0; }
 .mk-hero-slide {
     position: absolute; inset: 0;
-    background-position: center; background-size: cover;
+    background-position: center; background-size: contain; background-repeat: no-repeat;
     opacity: 0;
     transition: opacity 1.2s ease;
 }
