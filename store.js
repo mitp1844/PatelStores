@@ -19,6 +19,7 @@ const Store = {
         customers: [],
         drivers: [],
         categories: [],
+        flyers: [],
         currentUser: null
     },
 
@@ -32,7 +33,7 @@ const Store = {
         console.log('[Store] Initializing — fetching data from Supabase...');
 
         // Fetch all tables in parallel
-        const [prodRes, ordRes, custRes, drvRes, catRes] = await Promise.all([
+        const [prodRes, ordRes, custRes, drvRes, catRes, flyRes] = await Promise.all([
             (async () => {
     let all = [], from = 0, size = 1000;
     while (true) {
@@ -47,7 +48,8 @@ const Store = {
             sb.from('orders').select('*').order('created_at', { ascending: false }),
             sb.from('customers').select('*').order('created_at', { ascending: false }),
             sb.from('drivers').select('*').order('created_at', { ascending: false }),
-            sb.from('categories').select('*')
+            sb.from('categories').select('*'),
+            sb.from('flyers').select('*').order('sort_order', { ascending: true })
         ]);
 
         this._cache.products   = prodRes.data || [];
@@ -57,6 +59,7 @@ const Store = {
         this._cache.categories = catRes.data && catRes.data.length > 0
             ? catRes.data
             : DEFAULT_CATEGORIES;
+        this._cache.flyers     = flyRes.data || [];
 
         // Restore currentUser from localStorage (survives page refresh)
         try {
@@ -519,6 +522,78 @@ const Store = {
         if (error) throw new Error('removeCategory failed: ' + error.message);
 
         this._cache.categories = this._cache.categories.filter(c => c.id !== id);
+    },
+
+    // ─── FLYERS (promotional popups) ────────────
+
+    /** Get all flyers (sync, from cache). */
+    getFlyers() {
+        return this._cache.flyers;
+    },
+
+    /** Get only active flyers, in display order (sync). */
+    getActiveFlyers() {
+        return this._cache.flyers
+            .filter(f => f.active)
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    },
+
+    /**
+     * Add a new flyer to Supabase and cache.
+     * If flyer.image is a base64 data URL, upload it to storage first.
+     */
+    async addFlyer(flyer) {
+        let imageUrl = null;
+        if (flyer.image && flyer.image.startsWith('data:')) {
+            const ext = flyer.image.match(/data:image\/(\w+)/)?.[1] || 'png';
+            const path = `flyers/${crypto.randomUUID()}.${ext}`;
+            imageUrl = await this.uploadFile('uploads', path, flyer.image);
+        }
+
+        const maxOrder = this._cache.flyers.reduce((m, f) => Math.max(m, f.sort_order || 0), 0);
+        const row = {
+            title: flyer.title || null,
+            body: flyer.body || null,
+            image: imageUrl || flyer.image || null,
+            active: flyer.active !== false,
+            sort_order: maxOrder + 1
+        };
+
+        const { data, error } = await sb.from('flyers').insert(row).select().single();
+        if (error) throw new Error('addFlyer failed: ' + error.message);
+
+        this._cache.flyers.push(data);
+        return data;
+    },
+
+    /**
+     * Update an existing flyer in Supabase and cache.
+     * @param {string} id - Flyer UUID
+     * @param {object} updates - Fields to update
+     */
+    async updateFlyer(id, updates) {
+        if (updates.image && updates.image.startsWith('data:')) {
+            const ext = updates.image.match(/data:image\/(\w+)/)?.[1] || 'png';
+            const path = `flyers/${id}.${ext}`;
+            updates.image = await this.uploadFile('uploads', path, updates.image);
+        }
+
+        const { data, error } = await sb.from('flyers').update(updates).eq('id', id).select().single();
+        if (error) throw new Error('updateFlyer failed: ' + error.message);
+
+        const idx = this._cache.flyers.findIndex(f => f.id === id);
+        if (idx >= 0) this._cache.flyers[idx] = data;
+        return data;
+    },
+
+    /**
+     * Delete a flyer from Supabase and cache.
+     * @param {string} id - Flyer UUID
+     */
+    async deleteFlyer(id) {
+        const { error } = await sb.from('flyers').delete().eq('id', id);
+        if (error) throw new Error('deleteFlyer failed: ' + error.message);
+        this._cache.flyers = this._cache.flyers.filter(f => f.id !== id);
     },
 
     // ─── REFRESH HELPERS ────────────────────────
