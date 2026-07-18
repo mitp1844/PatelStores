@@ -193,6 +193,30 @@ async function doLogout() {
     showToast('Signed out successfully', 'info');
 }
 
+/**
+ * Show the admin-managed flyer popup(s) to a visitor, if any flyers are active.
+ * Called once per app load for guest/customer sessions (not admin/driver).
+ */
+function maybeShowFlyerPopup() {
+    const flyers = Store.getActiveFlyers();
+    if (!flyers.length) return;
+
+    const html = flyers.map((f, i) => `
+        <div ${i > 0 ? 'style="margin-top:20px;padding-top:20px;border-top:1px solid var(--cream-dark)"' : ''}>
+            ${f.image ? `<img src="${esc(f.image)}" style="width:100%;border-radius:var(--radius-md);margin-bottom:12px;object-fit:cover;max-height:320px">` : ''}
+            ${f.title ? `<h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:6px">${esc(f.title)}</h3>` : ''}
+            ${f.body ? `<p style="color:var(--slate);font-size:0.92rem;white-space:pre-wrap">${esc(f.body)}</p>` : ''}
+        </div>
+    `).join('');
+
+    document.getElementById('flyer-modal-content').innerHTML = html;
+    document.getElementById('flyer-modal').style.display = 'flex';
+}
+
+function closeFlyerModal() {
+    document.getElementById('flyer-modal').style.display = 'none';
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
