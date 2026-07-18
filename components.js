@@ -196,25 +196,119 @@ async function doLogout() {
 /**
  * Show the admin-managed flyer popup(s) to a visitor, if any flyers are active.
  * Called once per app load for guest/customer sessions (not admin/driver).
+ * Multiple flyers auto-advance as a slideshow; a single flyer with several
+ * photos auto-advances its own photo slideshow.
  */
+let _flyerState = null; // { flyers, flyerIdx, imgIdx, flyerTimer, imageTimer }
+
 function maybeShowFlyerPopup() {
     const flyers = Store.getActiveFlyers();
     if (!flyers.length) return;
 
-    const html = flyers.map((f, i) => `
-        <div ${i > 0 ? 'style="margin-top:20px;padding-top:20px;border-top:1px solid var(--cream-dark)"' : ''}>
-            ${f.image ? `<img src="${esc(f.image)}" style="width:100%;border-radius:var(--radius-md);margin-bottom:12px;object-fit:cover;max-height:320px">` : ''}
-            ${f.title ? `<h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:6px">${esc(f.title)}</h3>` : ''}
-            ${f.body ? `<p style="color:var(--slate);font-size:0.92rem;white-space:pre-wrap">${esc(f.body)}</p>` : ''}
-        </div>
-    `).join('');
-
-    document.getElementById('flyer-modal-content').innerHTML = html;
+    _flyerState = { flyers, flyerIdx: 0, imgIdx: 0, flyerTimer: null, imageTimer: null };
     document.getElementById('flyer-modal').style.display = 'flex';
+    _renderFlyerSlide();
+    _restartFlyerTimers();
+}
+
+function _flyerCurrentImages() {
+    const f = _flyerState.flyers[_flyerState.flyerIdx];
+    return Array.isArray(f.images) && f.images.length ? f.images : (f.image ? [f.image] : []);
+}
+
+function _renderFlyerSlide() {
+    if (!_flyerState) return;
+    const { flyers, flyerIdx, imgIdx } = _flyerState;
+    const f = flyers[flyerIdx];
+    const images = _flyerCurrentImages();
+
+    const imageHtml = images.length ? `
+        <div style="position:relative;margin-bottom:12px">
+            <img src="${esc(images[imgIdx])}" style="width:100%;border-radius:var(--radius-md);object-fit:cover;max-height:320px;display:block">
+            ${images.length > 1 ? `
+                <button onclick="_flyerImageStep(-1)" class="flyer-img-nav" style="left:8px">&#8249;</button>
+                <button onclick="_flyerImageStep(1)" class="flyer-img-nav" style="right:8px">&#8250;</button>
+                <div class="flyer-dots" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%)">
+                    ${images.map((_, i) => `<span class="flyer-dot ${i === imgIdx ? 'active' : ''}" onclick="_flyerImageGo(${i})"></span>`).join('')}
+                </div>
+            ` : ''}
+        </div>
+    ` : '';
+
+    const flyerNavHtml = flyers.length > 1 ? `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--cream-dark)">
+            <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:0.8rem" onclick="_flyerStep(-1)">&#8249; Prev</button>
+            <div class="flyer-dots">
+                ${flyers.map((_, i) => `<span class="flyer-dot ${i === flyerIdx ? 'active' : ''}" onclick="_flyerGo(${i})"></span>`).join('')}
+            </div>
+            <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:0.8rem" onclick="_flyerStep(1)">Next &#8250;</button>
+        </div>
+    ` : '';
+
+    document.getElementById('flyer-modal-content').innerHTML = `
+        ${imageHtml}
+        ${f.title ? `<h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:6px">${esc(f.title)}</h3>` : ''}
+        ${f.body ? `<p style="color:var(--slate);font-size:0.92rem;white-space:pre-wrap">${esc(f.body)}</p>` : ''}
+        ${flyerNavHtml}
+    `;
+}
+
+function _clearFlyerTimers() {
+    if (!_flyerState) return;
+    if (_flyerState.flyerTimer) clearInterval(_flyerState.flyerTimer);
+    if (_flyerState.imageTimer) clearInterval(_flyerState.imageTimer);
+    _flyerState.flyerTimer = null;
+    _flyerState.imageTimer = null;
+}
+
+function _restartFlyerTimers() {
+    if (!_flyerState) return;
+    _clearFlyerTimers();
+    if (_flyerState.flyers.length > 1) {
+        _flyerState.flyerTimer = setInterval(() => _flyerStep(1), 6000);
+    }
+    if (_flyerCurrentImages().length > 1) {
+        _flyerState.imageTimer = setInterval(() => _flyerImageStep(1), 3500);
+    }
+}
+
+function _flyerStep(dir) {
+    if (!_flyerState) return;
+    const n = _flyerState.flyers.length;
+    _flyerState.flyerIdx = (_flyerState.flyerIdx + dir + n) % n;
+    _flyerState.imgIdx = 0;
+    _renderFlyerSlide();
+    _restartFlyerTimers();
+}
+
+function _flyerGo(i) {
+    if (!_flyerState) return;
+    _flyerState.flyerIdx = i;
+    _flyerState.imgIdx = 0;
+    _renderFlyerSlide();
+    _restartFlyerTimers();
+}
+
+function _flyerImageStep(dir) {
+    if (!_flyerState) return;
+    const images = _flyerCurrentImages();
+    if (!images.length) return;
+    _flyerState.imgIdx = (_flyerState.imgIdx + dir + images.length) % images.length;
+    _renderFlyerSlide();
+    _restartFlyerTimers();
+}
+
+function _flyerImageGo(i) {
+    if (!_flyerState) return;
+    _flyerState.imgIdx = i;
+    _renderFlyerSlide();
+    _restartFlyerTimers();
 }
 
 function closeFlyerModal() {
     document.getElementById('flyer-modal').style.display = 'none';
+    _clearFlyerTimers();
+    _flyerState = null;
 }
 
 function showToast(message, type = 'success') {
