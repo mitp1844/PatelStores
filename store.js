@@ -20,6 +20,7 @@ const Store = {
         drivers: [],
         categories: [],
         flyers: [],
+        heroPhotos: [],
         currentUser: null
     },
 
@@ -33,7 +34,7 @@ const Store = {
         console.log('[Store] Initializing — fetching data from Supabase...');
 
         // Fetch all tables in parallel
-        const [prodRes, ordRes, custRes, drvRes, catRes, flyRes] = await Promise.all([
+        const [prodRes, ordRes, custRes, drvRes, catRes, flyRes, heroRes] = await Promise.all([
             (async () => {
     let all = [], from = 0, size = 1000;
     while (true) {
@@ -49,7 +50,8 @@ const Store = {
             sb.from('customers').select('*').order('created_at', { ascending: false }),
             sb.from('drivers').select('*').order('created_at', { ascending: false }),
             sb.from('categories').select('*'),
-            sb.from('flyers').select('*').order('sort_order', { ascending: true })
+            sb.from('flyers').select('*').order('sort_order', { ascending: true }),
+            sb.from('hero_photos').select('*').order('sort_order', { ascending: true })
         ]);
 
         this._cache.products   = prodRes.data || [];
@@ -60,6 +62,7 @@ const Store = {
             ? catRes.data
             : DEFAULT_CATEGORIES;
         this._cache.flyers     = flyRes.data || [];
+        this._cache.heroPhotos = heroRes.data || [];
 
         // Restore currentUser from localStorage (survives page refresh)
         try {
@@ -606,6 +609,63 @@ const Store = {
         const { error } = await sb.from('flyers').delete().eq('id', id);
         if (error) throw new Error('deleteFlyer failed: ' + error.message);
         this._cache.flyers = this._cache.flyers.filter(f => f.id !== id);
+    },
+
+    // ─── HERO PHOTOS (home page banner slideshow) ────
+
+    /** Get all hero photos (sync, from cache). */
+    getHeroPhotos() {
+        return this._cache.heroPhotos;
+    },
+
+    /** Get only active hero photos, in display order (sync). */
+    getActiveHeroPhotos() {
+        return this._cache.heroPhotos
+            .filter(p => p.active)
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    },
+
+    /**
+     * Add a hero photo to Supabase and cache.
+     * @param {string} image - Base64 data URL or already-hosted URL.
+     */
+    async addHeroPhoto(image) {
+        let imageUrl = image;
+        if (image && image.startsWith('data:')) {
+            const ext = image.match(/data:image\/(\w+)/)?.[1] || 'png';
+            const path = `hero/${crypto.randomUUID()}.${ext}`;
+            imageUrl = await this.uploadFile('uploads', path, image);
+        }
+
+        const maxOrder = this._cache.heroPhotos.reduce((m, p) => Math.max(m, p.sort_order || 0), 0);
+        const row = { image: imageUrl, active: true, sort_order: maxOrder + 1 };
+
+        const { data, error } = await sb.from('hero_photos').insert(row).select().single();
+        if (error) throw new Error('addHeroPhoto failed: ' + error.message);
+
+        this._cache.heroPhotos.push(data);
+        return data;
+    },
+
+    /**
+     * Update a hero photo's fields (active, sort_order) in Supabase and cache.
+     */
+    async updateHeroPhoto(id, updates) {
+        const { data, error } = await sb.from('hero_photos').update(updates).eq('id', id).select().single();
+        if (error) throw new Error('updateHeroPhoto failed: ' + error.message);
+
+        const idx = this._cache.heroPhotos.findIndex(p => p.id === id);
+        if (idx >= 0) this._cache.heroPhotos[idx] = data;
+        return data;
+    },
+
+    /**
+     * Delete a hero photo from Supabase and cache.
+     */
+    async deleteHeroPhoto(id) {
+        const { error } = await sb.from('hero_photos').delete().eq('id', id);
+        if (error) throw new Error('deleteHeroPhoto failed: ' + error.message);
+        this._cache.heroPhotos = this._cache.heroPhotos.filter(p => p.id !== id);
     },
 
     // ─── REFRESH HELPERS ────────────────────────
