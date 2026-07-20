@@ -1144,6 +1144,7 @@ async function doStaffLogin(role) {
             if (!customer || customer.role !== 'admin') { await sb.auth.signOut(); return showToast('Access denied.', 'error'); }
             Store.setCurrentUser({ ...customer, role: 'admin' });
             await Store.loadSensitiveData('admin');   // load orders/customers/drivers now
+            Store.subscribeToOrders(handleNewOrderAlert);
             showToast('Welcome, Admin!');
             navigate('admin');
         } catch (err) { showToast('Login failed: ' + err.message, 'error'); }
