@@ -24,6 +24,8 @@ const Store = {
         currentUser: null
     },
 
+    _orderChannel: null,
+
     // ─── INITIALIZATION ─────────────────────────
 
     /**
@@ -346,6 +348,32 @@ const Store = {
         const idx = this._cache.orders.findIndex(o => o.id === orderId);
         if (idx >= 0) this._cache.orders[idx] = data;
         return data;
+    },
+
+    /**
+     * Listen for newly-inserted orders in real time (requires the 'orders'
+     * table to have Realtime/replication enabled in the Supabase dashboard).
+     * Safe to call repeatedly — only subscribes once until unsubscribeFromOrders().
+     */
+    subscribeToOrders(onNewOrder) {
+        if (this._orderChannel) return;
+        this._orderChannel = sb.channel('admin-new-orders')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+                const order = payload.new;
+                if (!this._cache.orders.find(o => o.id === order.id)) {
+                    this._cache.orders.unshift(order);
+                }
+                onNewOrder(order);
+            })
+            .subscribe();
+    },
+
+    /** Stop listening for new orders (call on staff logout). */
+    unsubscribeFromOrders() {
+        if (this._orderChannel) {
+            sb.removeChannel(this._orderChannel);
+            this._orderChannel = null;
+        }
     },
 
     /**
