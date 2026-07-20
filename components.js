@@ -188,6 +188,7 @@ function updateNav() {
 }
 
 async function doLogout() {
+    Store.unsubscribeFromOrders();
     await Store.logout();
     navigate('home');
     showToast('Signed out successfully', 'info');
@@ -309,6 +310,27 @@ function closeFlyerModal() {
     document.getElementById('flyer-modal').style.display = 'none';
     _clearFlyerTimers();
     _flyerState = null;
+}
+
+/** Two-tone chime for new-order alerts. Synthesized so no audio file is needed. */
+function playAlertSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [880, 1175].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            const start = now + i * 0.2;
+            gain.gain.setValueAtTime(0.001, start);
+            gain.gain.exponentialRampToValueAtTime(0.6, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+            osc.start(start);
+            osc.stop(start + 0.3);
+        });
+    } catch (e) { /* audio unsupported/blocked — toast still shows */ }
 }
 
 function showToast(message, type = 'success') {
