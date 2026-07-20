@@ -221,21 +221,50 @@ function renderAdminDashboard() {
 // ORDERS
 // ═══════════════════════════════════════════
 let _orderFilter = 'all';
+// Defaults to 'today' so the view starts clean each day; pick a date/range to see older orders.
+let _orderDateMode = 'today'; // 'today' | 'range' | 'all'
+let _orderDateFrom = null;
+let _orderDateTo = null;
+
+function _todayStr() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function _filterOrdersByDate(orders) {
+    if (_orderDateMode === 'today') {
+        const today = _todayStr();
+        return orders.filter(o => (o.created_at || '').split('T')[0] === today);
+    }
+    if (_orderDateMode === 'range' && _orderDateFrom && _orderDateTo) {
+        return orders.filter(o => {
+            const d = (o.created_at || '').split('T')[0];
+            return d >= _orderDateFrom && d <= _orderDateTo;
+        });
+    }
+    return orders;
+}
+
+function _orderDateScopeLabel() {
+    if (_orderDateMode === 'today') return `Today · ${formatDate(_todayStr())}`;
+    if (_orderDateMode === 'range' && _orderDateFrom && _orderDateTo) return `${formatDate(_orderDateFrom)} – ${formatDate(_orderDateTo)}`;
+    return 'All time';
+}
 
 function renderAdminOrders() {
     window._newOrderAlerts = 0;
     const allOrders = Store.getOrders();
-    const orders = _orderFilter === 'all' ? allOrders : allOrders.filter(o => o.status === _orderFilter);
+    const dateFiltered = _filterOrdersByDate(allOrders);
+    const orders = _orderFilter === 'all' ? dateFiltered : dateFiltered.filter(o => o.status === _orderFilter);
 
-    // Count per status for filter badges
+    // Count per status for filter badges — scoped to the current date range, not all-time
     const counts = {
-        all: allOrders.length,
-        'awaiting-payment': allOrders.filter(o => o.status === 'awaiting-payment').length,
-        pending: allOrders.filter(o => o.status === 'pending').length,
-        confirmed: allOrders.filter(o => o.status === 'confirmed').length,
-        delivering: allOrders.filter(o => o.status === 'delivering').length,
-        delivered: allOrders.filter(o => o.status === 'delivered').length,
-        cancelled: allOrders.filter(o => o.status === 'cancelled').length,
+        all: dateFiltered.length,
+        'awaiting-payment': dateFiltered.filter(o => o.status === 'awaiting-payment').length,
+        pending: dateFiltered.filter(o => o.status === 'pending').length,
+        confirmed: dateFiltered.filter(o => o.status === 'confirmed').length,
+        delivering: dateFiltered.filter(o => o.status === 'delivering').length,
+        delivered: dateFiltered.filter(o => o.status === 'delivered').length,
+        cancelled: dateFiltered.filter(o => o.status === 'cancelled').length,
     };
     const filters = [
         { id: 'all', label: 'All' },
@@ -251,6 +280,17 @@ function renderAdminOrders() {
         <div class="admin-header">
             <h1 style="font-size:1.3rem">Orders (${counts.all})</h1>
         </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+            <button class="btn btn-sm ${_orderDateMode==='today'?'btn-primary':'btn-outline'}" onclick="setOrderDateMode('today')">Today</button>
+            <button class="btn btn-sm ${_orderDateMode==='all'?'btn-primary':'btn-outline'}" onclick="setOrderDateMode('all')">All Time</button>
+            <input type="date" id="order-date-from" class="form-input" style="padding:6px 8px;font-size:0.78rem;width:130px" value="${_orderDateFrom || ''}">
+            <span style="font-size:0.78rem;color:var(--slate)">to</span>
+            <input type="date" id="order-date-to" class="form-input" style="padding:6px 8px;font-size:0.78rem;width:130px" value="${_orderDateTo || ''}">
+            <button class="btn btn-secondary btn-sm" onclick="applyOrderDateRange()">Go</button>
+            <span style="font-size:0.78rem;color:var(--slate);font-weight:600;margin-left:4px">Showing: ${_orderDateScopeLabel()}</span>
+        </div>
+
         <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;-webkit-overflow-scrolling:touch">
             ${filters.map(f => `
                 <button onclick="setOrderFilter('${f.id}')"
@@ -260,13 +300,35 @@ function renderAdminOrders() {
             `).join('')}
         </div>
         ${orders.map(o => orderCard(o, true)).join('')}
-        ${orders.length === 0 ? `<div class="empty-state"><div class="empty-icon">📦</div><h3>No ${_orderFilter === 'all' ? '' : _orderFilter.replace('-',' ')} orders</h3></div>` : ''}
+        ${orders.length === 0 ? `
+            <div class="empty-state">
+                <div class="empty-icon">📦</div>
+                <h3>No ${_orderFilter === 'all' ? '' : _orderFilter.replace('-',' ')} orders ${_orderDateMode === 'today' ? 'today' : _orderDateMode === 'range' ? 'in this date range' : ''}</h3>
+                ${_orderDateMode !== 'all' ? `<p>Try <a href="#" onclick="setOrderDateMode('all');return false">viewing all orders</a>, or pick a date range above.</p>` : ''}
+            </div>
+        ` : ''}
     `;
     document.getElementById('page-container').innerHTML = adminShell('orders', content);
 }
 
 function setOrderFilter(status) {
     _orderFilter = status;
+    renderAdminOrders();
+}
+
+function setOrderDateMode(mode) {
+    _orderDateMode = mode;
+    renderAdminOrders();
+}
+
+function applyOrderDateRange() {
+    const from = document.getElementById('order-date-from').value;
+    const to = document.getElementById('order-date-to').value;
+    if (!from || !to) return showToast('Pick both a start and end date', 'error');
+    if (from > to) return showToast('Start date must be before end date', 'error');
+    _orderDateFrom = from;
+    _orderDateTo = to;
+    _orderDateMode = 'range';
     renderAdminOrders();
 }
 
