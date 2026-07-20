@@ -3,7 +3,25 @@
    Mobile-friendly card-based layout
    ═══════════════════════════════════════════ */
 
+// ═══════════════════════════════════════════
+// NEW ORDER ALERTS (Supabase Realtime)
+// ═══════════════════════════════════════════
+window._newOrderAlerts = window._newOrderAlerts || 0;
+
+/** Fired by Store.subscribeToOrders() whenever an order is inserted. */
+function handleNewOrderAlert(order) {
+    window._newOrderAlerts++;
+    playAlertSound();
+    showToast(`🔔 New order ${order.id} — ${formatRWF(order.total)}`, 'success');
+    if (['admin', 'admin-orders', 'admin-payments'].includes(currentRoute)) {
+        renderApp();
+    }
+}
+
 function adminShell(activeTab, content) {
+    const orderBadge = window._newOrderAlerts > 0
+        ? `<span style="background:var(--red);color:#fff;font-size:0.65rem;font-weight:800;padding:1px 6px;border-radius:999px;margin-left:6px">${window._newOrderAlerts}</span>`
+        : '';
     return `
         <div class="admin-layout">
             <aside class="admin-sidebar">
@@ -13,7 +31,7 @@ function adminShell(activeTab, content) {
                         <span class="sidebar-icon">📊</span> Dashboard
                     </a>
                     <a class="sidebar-link ${activeTab==='orders'?'active':''}" onclick="navigate('admin-orders')">
-                        <span class="sidebar-icon">📦</span> Orders
+                        <span class="sidebar-icon">📦</span> Orders${orderBadge}
                     </a>
                     <a class="sidebar-link ${activeTab==='payments'?'active':''}" onclick="navigate('admin-payments')">
                         <span class="sidebar-icon">💳</span> Payments
@@ -205,6 +223,7 @@ function renderAdminDashboard() {
 let _orderFilter = 'all';
 
 function renderAdminOrders() {
+    window._newOrderAlerts = 0;
     const allOrders = Store.getOrders();
     const orders = _orderFilter === 'all' ? allOrders : allOrders.filter(o => o.status === _orderFilter);
 
