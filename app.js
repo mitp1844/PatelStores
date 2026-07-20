@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check auth state and route
     const user = Store.getCurrentUser();
 if (user) {
-        if (user.role === 'admin') navigate('admin');
+        if (user.role === 'admin') { Store.subscribeToOrders(handleNewOrderAlert); navigate('admin'); }
         else if (user.role === 'driver') navigate('driver');
         else {
             // Restore last visited page on refresh
