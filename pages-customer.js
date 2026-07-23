@@ -4,6 +4,9 @@ const STORE_MOMO_CODES = {
     'shop': '051368'
 };
 
+// Delivery fee is mandatory on every order — no free-delivery threshold
+const DELIVERY_FEE = 1500;
+
 // Fallback hero photo used until the admin uploads their own (Admin → Hero Banner)
 const DEFAULT_HERO_PHOTO = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80';
 
@@ -205,8 +208,8 @@ function renderHome() {
                 <!-- PROMO -->
                 <div class="mk-promo">
                     <div class="mk-promo-text">
-                        <div class="mk-promo-tag">Free delivery</div>
-                        <div class="mk-promo-title">On orders over RWF 15,000</div>
+                        <div class="mk-promo-tag">Fast delivery</div>
+                        <div class="mk-promo-title">Groceries delivered across Kigali</div>
                         <button class="mk-promo-btn" onclick="homeBrowseAll()">Start shopping</button>
                     </div>
                     <div class="mk-promo-emoji">🛒</div>
@@ -589,12 +592,8 @@ function renderCart() {
             `;
         }).join('');
 
-        // free delivery logic
-        const FREE = 15000;
-        const delivery = subtotal >= FREE ? 0 : 1500;
+        const delivery = DELIVERY_FEE;
         const total = subtotal + delivery;
-        const remaining = FREE - subtotal;
-        const progress = Math.min(100, Math.round((subtotal / FREE) * 100));
 
         storeCartsHtml += `
             <div class="mkc-store-block">
@@ -603,18 +602,11 @@ function renderCart() {
                     <div class="mkc-store-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</div>
                 </div>
 
-                ${delivery === 0
-                    ? `<div class="mkc-free mkc-free-done">🎉 You've unlocked FREE delivery!</div>`
-                    : `<div class="mkc-free">
-                         <div class="mkc-free-text">Add <b>${formatRWF(remaining)}</b> more for FREE delivery</div>
-                         <div class="mkc-free-bar"><div class="mkc-free-fill" style="width:${progress}%"></div></div>
-                       </div>`}
-
                 <div class="mkc-items">${itemsHtml}</div>
 
                 <div class="mkc-summary">
                     <div class="mkc-sline"><span>Subtotal</span><span>${formatRWF(subtotal)}</span></div>
-                    <div class="mkc-sline"><span>Delivery fee</span><span>${delivery === 0 ? '<b style="color:var(--forest)">FREE</b>' : formatRWF(delivery)}</span></div>
+                    <div class="mkc-sline"><span>Delivery fee</span><span>${formatRWF(delivery)}</span></div>
                     <div class="mkc-sline mkc-total"><span>Total</span><span>${formatRWF(total)}</span></div>
                 </div>
 
@@ -678,9 +670,7 @@ function renderCheckout(storeId) {
         subtotal += p.price * ci.qty;
         return { ...ci, name: p.name, emoji: p.emoji, price: p.price };
     });
-    // ✅ FREE DELIVERY on orders over RWF 15,000
-    const FREE_DELIVERY_THRESHOLD = 15000;
-    const delivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : 1500;
+    const delivery = DELIVERY_FEE;
     const total = subtotal + delivery;
 
     const container = document.getElementById('page-container');
@@ -796,9 +786,8 @@ function renderCheckout(storeId) {
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
                     <span style="color:var(--slate);font-size:0.88rem">Delivery fee</span>
-                    <span style="font-size:0.88rem">${delivery === 0 ? '<b style="color:var(--forest)">FREE</b>' : formatRWF(delivery)}</span>
+                    <span style="font-size:0.88rem">${formatRWF(delivery)}</span>
                 </div>
-                ${delivery === 0 ? '' : `<div style="font-size:0.75rem;color:var(--forest);background:var(--cream-light);border-radius:6px;padding:6px 8px;margin:4px 0">Add ${formatRWF(15000 - subtotal)} more to get FREE delivery</div>`}
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;margin-top:6px;border-top:2px solid var(--cream-dark)">
                     <span style="font-weight:700;font-size:1.05rem;color:var(--coffee)">Total</span>
                     <span style="font-weight:800;font-size:1.15rem;color:var(--forest)">${formatRWF(total)}</span>
