@@ -2,10 +2,16 @@
    PATEL STORES — Constants & Helpers
    ═══════════════════════════════════════════ */
 
+// Shopping (cart/checkout/product catalog) is unified into one virtual store.
+// The 3 physical locations below are kept for historical orders placed before
+// this change, and 'main' is the single store all new orders/products use.
+const MAIN_STORE_ID = 'main';
+
 const STORES = [
     { id: 'supermarket', name: 'Patel Supermarket', address: '6 KN 82 St, Kigali, Rwanda', emoji: '🏪', phone: '+250 788 836 076', email: 'patelgrocersrwanda@gmail.com', hours: '8AM - 8PM Daily' },
     { id: 'grocers', name: 'Patel Grocers', address: '46 KN 14 Ave, Kigali, Rwanda', emoji: '🛒', phone: '+250 783 335 971', email: 'patelgrocersrwanda@gmail.com', hours: '8AM - 10PM Daily' },
-    { id: 'shop', name: 'Patel Shop', address: '33GW+243, Kigali, Rwanda', emoji: '🏬', phone: '+250 791 500 812', email: 'patelgrocersrwanda@gmail.com', hours: '8AM - 10PM Daily' }
+    { id: 'shop', name: 'Patel Shop', address: '33GW+243, Kigali, Rwanda', emoji: '🏬', phone: '+250 791 500 812', email: 'patelgrocersrwanda@gmail.com', hours: '8AM - 10PM Daily' },
+    { id: MAIN_STORE_ID, name: 'Patel Stores', address: 'Kigali, Rwanda', emoji: '🏪', phone: '+250 788 836 076', email: 'patelgrocersrwanda@gmail.com', hours: '8AM - 10PM Daily' }
 ];
 
 const DEFAULT_CATEGORIES = [
