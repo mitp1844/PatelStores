@@ -1,8 +1,5 @@
-const STORE_MOMO_CODES = {
-    'supermarket': '004305',
-    'grocers': '1602698',
-    'shop': '051368'
-};
+const MOMO_CODE = '400000';
+const MOMO_ACCOUNT_NAME = 'Patel Grocery LTD.';
 
 // Delivery fee is mandatory on every order — no free-delivery threshold
 const DELIVERY_FEE = 1500;
@@ -28,14 +25,6 @@ function _updateHeroSlideshow(count) {
     if (count > 1) _heroSlideTimer = setInterval(_tickHeroSlideshow, 5000);
 }
 
-// Track selected store globally — default to grocers
-let selectedStoreId = localStorage.getItem('patel-selected-store') || 'grocers';
-
-function setSelectedStore(storeId) {
-    selectedStoreId = storeId;
-    localStorage.setItem('patel-selected-store', storeId);
-}
-
 // ═══════════════════════════════════════════
 // HOME — Instacart / Jumia-style curated layout
 // ═══════════════════════════════════════════
@@ -46,8 +35,7 @@ window._homeCategory = 'all';
 
 function renderHome() {
     const container = document.getElementById('page-container');
-    const store = STORES.find(s => s.id === selectedStoreId) || STORES[0];
-    const allProducts = Store.getProducts().filter(p => p.stores && p.stores.includes(selectedStoreId));
+    const allProducts = Store.getProducts();
     const categories = Store.getCategories().filter(c => c.id !== 'all');
 
     // User + cart for the in-hero action buttons
@@ -60,7 +48,7 @@ function renderHome() {
     const heroPhotos = activeHeroPhotos.length ? activeHeroPhotos.map(p => p.image) : [DEFAULT_HERO_PHOTO];
 
     window._allHomeProducts = allProducts;
-    window._homeStoreId = selectedStoreId;
+    window._homeStoreId = MAIN_STORE_ID;
     window._loadMoreOffset = 100;
     window._homeCategory = 'all';
     window._filteredHomeProducts = null;
@@ -110,13 +98,10 @@ function renderHome() {
             <div class="mk-hero-top">
                 <div class="mk-hero-brand">
                     <h1>Patel Stores</h1>
-                    <label class="mk-hero-loc" for="store-picker" title="Tap to switch store">
+                    <span class="mk-hero-loc">
                         <span class="mk-loc-pin">📍</span>
-                        <select id="store-picker" onchange="switchStore(this.value)" class="mk-store-select">
-                            ${STORES.map(s => `<option value="${s.id}" ${s.id === selectedStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                        </select>
-                        <svg class="mk-loc-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
-                    </label>
+                        <span class="mk-store-select">Kigali, Rwanda</span>
+                    </span>
                 </div>
                 <div class="mk-hero-actions">
                     <button class="mk-hero-cart" onclick="navigate('cart')" aria-label="Cart">
@@ -129,7 +114,7 @@ function renderHome() {
                 </div>
             </div>
             <div class="mk-hero-copy">
-                <div class="mk-hero-eyebrow">Fresh today · ${store.hours}</div>
+                <div class="mk-hero-eyebrow">Fresh today · 8AM - 10PM Daily</div>
                 <h2>Groceries delivered from your neighbourhood</h2>
                 <button class="mk-hero-cta" onclick="homeBrowseAll()">
                     Shop now
@@ -187,7 +172,7 @@ function renderHome() {
                 ${featured.length > 0 ? `
                 <div class="mk-sec-head" style="margin-top:26px"><h3>Featured picks</h3></div>
                 <div class="mk-scroll-track">
-                    ${featured.map(p => _scrollCard(p, selectedStoreId)).join('')}
+                    ${featured.map(p => _scrollCard(p, MAIN_STORE_ID)).join('')}
                 </div>` : ''}
 
                 <!-- PER-CATEGORY ROWS -->
@@ -201,7 +186,7 @@ function renderHome() {
                         <a onclick="homeBrowseCategory('${c.id}')">See all ${items.length}</a>
                     </div>
                     <div class="mk-scroll-track">
-                        ${display.map(p => _scrollCard(p, selectedStoreId)).join('')}
+                        ${display.map(p => _scrollCard(p, MAIN_STORE_ID)).join('')}
                     </div>`;
                 }).join('')}
 
@@ -233,12 +218,13 @@ function _scrollCard(product, storeId) {
     const imgHtml = imgs.length > 0
         ? `<img src="${imgs[0]}" alt="${esc(product.name)}">`
         : `<span class="mk-card-emoji">${product.emoji}</span>`;
-    const oos = product.stock === 0;
+    const oos = product.available === false || product.stock === 0;
+    const oosLabel = product.available === false ? 'Unavailable' : 'Sold Out';
     return `
         <div class="mk-card" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
             <div class="mk-card-img">
                 ${imgHtml}
-                ${oos ? '<div class="mk-card-oos">Sold Out</div>' : ''}
+                ${oos ? `<div class="mk-card-oos">${oosLabel}</div>` : ''}
             </div>
             <div class="mk-card-name">${esc(product.name)}</div>
             <div class="mk-card-foot">
@@ -308,13 +294,6 @@ function homeBrowseAll() {
     } else {
         wrap.style.display = 'none';
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function switchStore(storeId) {
-    setSelectedStore(storeId);
-    renderHome();
-    renderFloatingCart();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -414,8 +393,7 @@ function loadMoreProducts() {
 // ═══════════════════════════════════════════
 // STORE PAGE — Same as home but for direct nav
 // ═══════════════════════════════════════════
-function renderStorePage(storeId) {
-    setSelectedStore(storeId);
+function renderStorePage() {
     renderHome();
 }
 
@@ -426,20 +404,21 @@ function productCard(product, storeId) {
     const images = Array.isArray(product.images) && product.images.length > 0 ? product.images : (product.image ? [product.image] : []);
     const imgContent = images.length > 0 ? `<img src="${images[0]}" alt="${product.name}">` : product.emoji;
     const photoCount = images.length > 1 ? `<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;border-radius:var(--radius-full);padding:1px 6px;font-size:0.65rem">📷 ${images.length}</div>` : '';
-    const isOutOfStock = product.stock === 0;
+    const isOutOfStock = product.available === false || product.stock === 0;
+    const outLabel = product.available === false ? 'Unavailable' : 'Sold Out';
     return `
         <div class="product-card" data-category="${product.category}" data-name="${product.name.toLowerCase()}" onclick="navigate('product',{id:'${product.id}',storeId:'${storeId}'})">
             <div class="product-img" style="position:relative">
                 ${imgContent}
                 ${photoCount}
-                ${isOutOfStock ? '<div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:var(--red)">SOLD OUT</div>' : ''}
+                ${isOutOfStock ? `<div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:var(--red)">${outLabel.toUpperCase()}</div>` : ''}
             </div>
             <div class="product-info">
                 <div class="product-name">${product.name}</div>
                 <div class="product-price">${formatRWF(product.price)}</div>
                 <div class="product-actions">
                     <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();addProductToCart('${storeId}','${product.id}')" ${isOutOfStock ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>
-                        ${isOutOfStock ? 'Sold Out' : '+ Add'}
+                        ${isOutOfStock ? outLabel : '+ Add'}
                     </button>
                 </div>
             </div>
@@ -464,7 +443,10 @@ function renderProductDetail(productId, storeId) {
     if (!product) return navigate('home');
 
     const images = Array.isArray(product.images) && product.images.length > 0 ? product.images : (product.image ? [product.image] : []);
-    const stockLabel = product.stock === 0
+    const isUnavailable = product.available === false || product.stock === 0;
+    const stockLabel = product.available === false
+        ? `<span style="color:var(--red);font-weight:700">🚫 Currently Unavailable</span>`
+        : product.stock === 0
         ? `<span style="color:var(--red);font-weight:700">❌ Out of Stock</span>`
         : product.stock <= 5 && product.stock != null
         ? `<span style="color:var(--orange);font-weight:700">⚠️ Only ${product.stock} left!</span>`
@@ -507,11 +489,6 @@ function renderProductDetail(productId, storeId) {
                     <div style="font-size:1.8rem;font-weight:800;color:var(--forest);margin-bottom:10px">${formatRWF(product.price)}</div>
                     <div style="margin-bottom:12px">${stockLabel}</div>
 
-                    <div style="padding:10px;background:var(--cream);border-radius:var(--radius-md);margin-bottom:14px;font-size:0.82rem">
-                        <span style="color:var(--slate)">Available at:</span>
-                        <span style="font-weight:600">${product.stores.map(s => STORES.find(st=>st.id===s)?.name.replace('Patel ','')).filter(Boolean).join(' · ')}</span>
-                    </div>
-
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
                         <div class="qty-control">
                             <button onclick="changeDetailQty(-1)">−</button>
@@ -520,8 +497,8 @@ function renderProductDetail(productId, storeId) {
                         </div>
                         <button class="btn btn-primary" style="flex:1;padding:12px;border-radius:var(--radius-md)"
                             onclick="addProductToCartQty('${storeId}','${product.id}')"
-                            ${product.stock === 0 ? 'disabled style="opacity:0.4"' : ''}>
-                            ${product.stock === 0 ? 'Out of Stock' : '🛒 Add to Cart'}
+                            ${isUnavailable ? 'disabled style="opacity:0.4"' : ''}>
+                            ${isUnavailable ? (product.available === false ? 'Unavailable' : 'Out of Stock') : '🛒 Add to Cart'}
                         </button>
                     </div>
                     <div style="font-size:0.78rem;color:var(--slate)">
@@ -552,13 +529,11 @@ function addProductToCartQty(storeId, productId) {
 // ═══════════════════════════════════════════
 function renderCart() {
     const container = document.getElementById('page-container');
-    let storeCartsHtml = '';
-    let hasItems = false;
+    const cart = Store.getCart(MAIN_STORE_ID);
+    const hasItems = cart.length > 0;
+    let cartHtml = '';
 
-    STORES.forEach(store => {
-        const cart = Store.getCart(store.id);
-        if (cart.length === 0) return;
-        hasItems = true;
+    if (hasItems) {
         const products = Store.getProducts();
         let subtotal = 0;
         const itemCount = cart.reduce((s, ci) => s + ci.qty, 0);
@@ -581,11 +556,11 @@ function renderCart() {
                         <div class="mkc-item-line">${formatRWF(lineTotal)}</div>
                     </div>
                     <div class="mkc-item-right">
-                        <button class="mkc-remove" onclick="removeCartItem('${store.id}','${prod.id}')" aria-label="Remove">✕</button>
+                        <button class="mkc-remove" onclick="removeCartItem('${MAIN_STORE_ID}','${prod.id}')" aria-label="Remove">✕</button>
                         <div class="mkc-qty">
-                            <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty - 1})">−</button>
+                            <button onclick="updateQty('${MAIN_STORE_ID}','${prod.id}',${ci.qty - 1})">−</button>
                             <span>${ci.qty}</span>
-                            <button onclick="updateQty('${store.id}','${prod.id}',${ci.qty + 1})">+</button>
+                            <button onclick="updateQty('${MAIN_STORE_ID}','${prod.id}',${ci.qty + 1})">+</button>
                         </div>
                     </div>
                 </div>
@@ -595,10 +570,10 @@ function renderCart() {
         const delivery = DELIVERY_FEE;
         const total = subtotal + delivery;
 
-        storeCartsHtml += `
+        cartHtml = `
             <div class="mkc-store-block">
                 <div class="mkc-store-head">
-                    <div class="mkc-store-name">${store.emoji} ${store.name}</div>
+                    <div class="mkc-store-name">🛒 Your Items</div>
                     <div class="mkc-store-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</div>
                 </div>
 
@@ -610,13 +585,13 @@ function renderCart() {
                     <div class="mkc-sline mkc-total"><span>Total</span><span>${formatRWF(total)}</span></div>
                 </div>
 
-                <button class="mkc-checkout-btn" onclick="navigate('checkout',{storeId:'${store.id}'})">
+                <button class="mkc-checkout-btn" onclick="navigate('checkout',{storeId:'${MAIN_STORE_ID}'})">
                     Checkout · ${formatRWF(total)}
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
             </div>
         `;
-    });
+    }
 
     container.innerHTML = `
         <div class="mkc-page">
@@ -626,7 +601,7 @@ function renderCart() {
                 </button>
                 <h1>Your Cart</h1>
             </div>
-            ${hasItems ? storeCartsHtml : `
+            ${hasItems ? cartHtml : `
                 <div class="mkc-empty">
                     <div class="mkc-empty-icon">🛒</div>
                     <h3>Your cart is empty</h3>
@@ -677,7 +652,7 @@ function renderCheckout(storeId) {
     container.innerHTML = `
         <div class="checkout-layout">
             <div>
-                <h2 style="margin-bottom:var(--gap-md);font-size:1.3rem">Checkout — ${store.name.replace('Patel ','')}</h2>
+                <h2 style="margin-bottom:var(--gap-md);font-size:1.3rem">Checkout</h2>
 
                 ${isGuest ? `
                 <div class="card" style="margin-bottom:var(--gap-md)">
@@ -739,8 +714,9 @@ function renderCheckout(storeId) {
                                 <div style="font-weight:700;margin-bottom:6px;font-size:0.9rem">📱 Send <span style="color:var(--forest)">${formatRWF(total)}</span> to:</div>
                                 <div style="background:white;border-radius:var(--radius-md);padding:12px;border:1px solid var(--cream-dark)">
                                     <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--slate);margin-bottom:3px">MoMo Pay Code</div>
-                                    <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:700;color:var(--coffee);letter-spacing:3px">${STORE_MOMO_CODES[storeId] || '004305'}</div>
-                                    <div style="font-size:0.78rem;color:var(--slate);margin-top:2px">Dial: <b>*182*8*1*${STORE_MOMO_CODES[storeId] || '004305'}#</b></div>
+                                    <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:700;color:var(--coffee);letter-spacing:3px">${MOMO_CODE}</div>
+                                    <div style="font-size:0.85rem;font-weight:600;color:var(--coffee);margin-top:2px">${MOMO_ACCOUNT_NAME}</div>
+                                    <div style="font-size:0.78rem;color:var(--slate);margin-top:2px">Dial: <b>*182*8*1*${MOMO_CODE}#</b></div>
                                 </div>
                                 <div style="font-size:0.75rem;color:var(--light-slate);margin-top:8px">After sending, upload a screenshot below.</div>
                             </div>
