@@ -171,7 +171,8 @@ const Store = {
             image: product.images?.[0] || imageUrl || null,
             images: product.images || (imageUrl ? [imageUrl] : []),
             stock: product.stock ?? null,
-            barcode: product.barcode || null
+            barcode: product.barcode || null,
+            available: product.available !== false
         };
 
         // If caller provided an id, use it; otherwise let Supabase generate UUID
@@ -282,7 +283,7 @@ const Store = {
 
     /** Total item count across all stores' carts. */
     getTotalCartCount() {
-        return STORES.reduce((s, st) => s + this.getCartCount(st.id), 0);
+        return this.getCartCount(MAIN_STORE_ID);
     },
 
     // ─── ORDERS ─────────────────────────────────
