@@ -439,7 +439,6 @@ function addProductToCart(storeId, productId) {
 // ═══════════════════════════════════════════
 function renderProductDetail(productId, storeId) {
     const product = Store.getProduct(productId);
-    const store = STORES.find(s => s.id === storeId) || STORES[0];
     if (!product) return navigate('home');
 
     const images = Array.isArray(product.images) && product.images.length > 0 ? product.images : (product.image ? [product.image] : []);
@@ -500,9 +499,6 @@ function renderProductDetail(productId, storeId) {
                             ${isUnavailable ? 'disabled style="opacity:0.4"' : ''}>
                             ${isUnavailable ? (product.available === false ? 'Unavailable' : 'Out of Stock') : '🛒 Add to Cart'}
                         </button>
-                    </div>
-                    <div style="font-size:0.78rem;color:var(--slate)">
-                        📍 Shopping from: <b>${store.name}</b>
                     </div>
                 </div>
             </div>
