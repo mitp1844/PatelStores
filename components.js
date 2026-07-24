@@ -66,7 +66,7 @@ function renderFloatingCart() {
     const user = Store.getCurrentUser();
     const isStaff = user && (user.role === 'admin' || user.role === 'driver');
     const showOnRoutes = ['home', 'store', 'product'];
-    const storeId = (typeof selectedStoreId !== 'undefined' && selectedStoreId) || (STORES[0] && STORES[0].id);
+    const storeId = MAIN_STORE_ID;
     const shouldShow = !isStaff && showOnRoutes.includes(currentRoute) && storeId;
 
     const cart = shouldShow ? Store.getCart(storeId) : [];
@@ -151,7 +151,6 @@ function updateNav() {
     } else {
         links = `
             <a href="#" onclick="navigate('home');return false" class="${currentRoute==='home'?'active':''}">Home</a>
-            ${STORES.map(s => `<a href="#" onclick="navigate('store',{id:'${s.id}'});return false" class="${currentRoute==='store'&&routeParams.id===s.id?'active':''}">${s.name.replace('Patel ','')}</a>`).join('')}
         `;
         const cartCount = Store.getTotalCartCount();
         if (isCustomer) {
