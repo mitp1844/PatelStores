@@ -141,22 +141,24 @@ function adminProductCard(p) {
     const img = images.length > 0 ? `<img src="${images[0]}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:1.8rem">${p.emoji}</span>`;
     const stockColor = p.stock === 0 ? 'var(--red)' : p.stock <= 5 ? 'var(--orange)' : 'var(--forest)';
     const stockText = p.stock === 0 ? 'Out of stock' : p.stock != null ? p.stock + ' left' : 'In stock';
+    const isAvailable = p.available !== false;
 
     return `
-       <div class="card" style="margin-bottom:8px" data-barcode="${p.barcode || ''}">
+       <div class="card" style="margin-bottom:8px;${isAvailable ? '' : 'opacity:0.6'}" data-barcode="${p.barcode || ''}">
             <div class="card-body" style="padding:10px;display:flex;align-items:center;gap:10px">
                 <div style="width:52px;height:52px;border-radius:var(--radius-sm);background:var(--cream);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
                     ${img}
                 </div>
                 <div style="flex:1;min-width:0">
-                    <div style="font-weight:600;font-size:0.88rem;color:var(--coffee);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+                    <div style="font-weight:600;font-size:0.88rem;color:var(--coffee);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}${isAvailable ? '' : ' <span style="color:var(--red);font-weight:700;font-size:0.68rem">· UNAVAILABLE</span>'}</div>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:2px">
                         <span style="font-weight:800;color:var(--forest);font-size:0.88rem">${formatRWF(p.price)}</span>
                         <span style="font-size:0.72rem;font-weight:600;color:${stockColor}">${stockText}</span>
                     </div>
-                    <div style="font-size:0.7rem;color:var(--light-slate);margin-top:1px">${p.stores.map(s => STORES.find(st => st.id === s)?.name?.replace('Patel ','')).join(' · ')}${p.barcode ? ` · 📊 ${p.barcode}` : ''}</div>
+                    ${p.barcode ? `<div style="font-size:0.7rem;color:var(--light-slate);margin-top:1px">📊 ${p.barcode}</div>` : ''}
                 </div>
                 <div style="display:flex;gap:4px;flex-shrink:0">
+                    <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="toggleProductAvailability('${p.id}',${isAvailable})" title="${isAvailable ? 'Mark unavailable' : 'Mark available'}">${isAvailable ? '🚫' : '✅'}</button>
                     <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="showEditProductForm('${p.id}')">✏️</button>
                     <button class="btn btn-ghost btn-sm" style="padding:5px 8px;font-size:0.75rem" onclick="deleteProduct('${p.id}')">🗑️</button>
                 </div>
@@ -203,7 +205,7 @@ function renderAdminDashboard() {
             <div class="stat-card blue">
                 <div class="stat-label">Products</div>
                 <div class="stat-value">${products.length}</div>
-                <div class="stat-sub">3 stores</div>
+                <div class="stat-sub">In catalog</div>
             </div>
         </div>
 
@@ -517,7 +519,6 @@ async function verifyPayment(orderId, approved) {
 function renderAdminProducts() {
     const products = Store.getProducts();
     const catOptions = Store.getCategories().filter(c => c.id !== 'all').map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    const storeChecks = STORES.map(s => `<label class="form-check"><input type="checkbox" value="${s.id}" class="new-prod-store" checked> ${s.name}</label>`).join('');
 
     const content = `
         <div class="admin-header">
@@ -574,10 +575,6 @@ function renderAdminProducts() {
                     </div>
                     <div class="form-group"><label>Barcode</label><div style="display:flex;gap:6px"><input type="text" class="form-input" id="new-prod-barcode" placeholder="Enter barcode (optional)" style="flex:1"><button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0" onclick="scanBarcodeForField('new-prod-barcode')">📷 Scan</button></div></div>
                     <div class="form-group">
-                        <label>Stores</label>
-                        <div style="display:flex;gap:var(--gap-sm);flex-wrap:wrap;margin-top:4px">${storeChecks}</div>
-                    </div>
-                    <div class="form-group">
                         <label>Photos (up to 5)</label>
                         <div style="display:flex;gap:var(--gap-xs);flex-wrap:wrap" id="new-prod-images-preview"></div>
                         <div class="upload-zone" style="margin-top:6px;padding:var(--gap-md)" onclick="document.getElementById('new-prod-images').click()">
@@ -607,12 +604,6 @@ function renderAdminProducts() {
                     <div class="form-row">
                         <div class="form-group"><label>Category</label><select class="form-input" id="edit-prod-cat">${catOptions}</select></div>
                         <div class="form-group"><label>Emoji</label><input type="text" class="form-input" id="edit-prod-emoji"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Stores</label>
-                        <div style="display:flex;gap:var(--gap-sm);flex-wrap:wrap;margin-top:4px">
-                            ${STORES.map(s => `<label class="form-check"><input type="checkbox" value="${s.id}" class="edit-prod-store"> ${s.name}</label>`).join('')}
-                        </div>
                     </div>
                     <div class="form-group">
                         <label>Photos</label>
@@ -680,8 +671,8 @@ async function addNewProduct() {
     const emoji = document.getElementById('new-prod-emoji').value || '🛒';
     const stock = parseInt(document.getElementById('new-prod-stock').value) || null;
     const barcode = document.getElementById('new-prod-barcode')?.value.trim() || null;
-    const stores = Array.from(document.querySelectorAll('.new-prod-store:checked')).map(cb => cb.value);
-    if (!name || !price || stores.length === 0) return showToast('Fill all fields and select a store', 'error');
+    const stores = [MAIN_STORE_ID];
+    if (!name || !price) return showToast('Fill all fields', 'error');
     try {
         let imageUrls = [];
         for (let i = 0; i < newProductImages.length; i++) {
@@ -707,7 +698,6 @@ function showEditProductForm(productId) {
     document.getElementById('edit-prod-emoji').value = p.emoji || '';
     document.getElementById('edit-prod-stock').value = p.stock ?? '';
     document.getElementById('edit-prod-cat').value = p.category;
-    document.querySelectorAll('.edit-prod-store').forEach(cb => { cb.checked = p.stores.includes(cb.value); });
     editProductImages = Array.isArray(p.images) ? [...p.images] : (p.image ? [p.image] : []);
     renderEditProductImagePreviews();
     document.getElementById('edit-product-form').style.display = '';
@@ -738,8 +728,8 @@ async function saveEditProduct() {
     const category = document.getElementById('edit-prod-cat').value;
     const emoji = document.getElementById('edit-prod-emoji').value || '🛒';
     const stock = document.getElementById('edit-prod-stock').value !== '' ? parseInt(document.getElementById('edit-prod-stock').value) : null;
-    const stores = Array.from(document.querySelectorAll('.edit-prod-store:checked')).map(cb => cb.value);
-    if (!name || !price || stores.length === 0) return showToast('Fill all fields', 'error');
+    const stores = [MAIN_STORE_ID];
+    if (!name || !price) return showToast('Fill all fields', 'error');
     try {
         let finalImages = [];
         for (let img of editProductImages) {
@@ -762,6 +752,13 @@ async function deleteProduct(productId) {
     if (!confirm('Delete "' + (p?.name || productId) + '"?')) return;
     try { await Store.deleteProduct(productId); showToast('Deleted'); renderAdminProducts(); }
     catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+async function toggleProductAvailability(productId, currentlyAvailable) {
+    try {
+        await Store.updateProduct(productId, { available: !currentlyAvailable });
+        renderAdminProducts();
+    } catch (err) { showToast('Failed: ' + err.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════
@@ -1378,7 +1375,7 @@ function renderAdminAnalytics() {
         <!-- Store Revenue -->
         <div class="stats-grid" style="margin-bottom:var(--gap-md)">
             ${Object.values(storeSales).map((s, i) => `
-                <div class="stat-card ${['saffron','green','terra'][i]}">
+                <div class="stat-card ${['saffron','green','terra','blue'][i % 4]}">
                     <div class="stat-label">${s.emoji} ${s.name.replace('Patel ','')}</div>
                     <div class="stat-value" style="font-size:1.3rem">${formatRWF(s.revenue)}</div>
                     <div class="stat-sub">${s.orders} orders</div>
