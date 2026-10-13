@@ -1,8 +1,10 @@
 const MOMO_CODE = '400000';
 const MOMO_ACCOUNT_NAME = 'Patel Grocery LTD.';
 
-// Delivery fee is mandatory on every order — no free-delivery threshold
-const DELIVERY_FEE = 1500;
+// Delivery fee is mandatory on every order — no free-delivery threshold.
+// The live value is stored in Supabase and set by admins (Store.getDeliveryFee()).
+// This constant is only a fallback if settings haven't loaded yet.
+const DELIVERY_FEE = 2000;
 
 // Fallback hero photo used until the admin uploads their own (Admin → Hero Banner)
 const DEFAULT_HERO_PHOTO = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80';
@@ -563,7 +565,7 @@ function renderCart() {
             `;
         }).join('');
 
-        const delivery = DELIVERY_FEE;
+        const delivery = Store.getDeliveryFee();
         const total = subtotal + delivery;
 
         cartHtml = `
@@ -641,7 +643,7 @@ function renderCheckout(storeId) {
         subtotal += p.price * ci.qty;
         return { ...ci, name: p.name, emoji: p.emoji, price: p.price };
     });
-    const delivery = DELIVERY_FEE;
+    const delivery = Store.getDeliveryFee();
     const total = subtotal + delivery;
 
     const container = document.getElementById('page-container');
