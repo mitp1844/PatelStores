@@ -57,6 +57,9 @@ function adminShell(activeTab, content) {
                     <a class="sidebar-link ${activeTab==='hero'?'active':''}" onclick="navigate('admin-hero')">
                         <span class="sidebar-icon">🖼️</span> Hero Banner
                     </a>
+                    <a class="sidebar-link ${activeTab==='settings'?'active':''}" onclick="navigate('admin-settings')">
+                        <span class="sidebar-icon">⚙️</span> Settings
+                    </a>
                 </div>
             </aside>
             <div class="admin-content">${content}</div>
@@ -1195,6 +1198,50 @@ async function deleteHeroPhotoConfirm(id) {
     if (!confirm('Delete this photo?')) return;
     try { await Store.deleteHeroPhoto(id); showToast('Removed'); renderAdminHero(); }
     catch (err) { showToast('Failed: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function renderAdminSettings() {
+    const fee = Store.getDeliveryFee();
+    const content = `
+        <div class="admin-header">
+            <h1 style="font-size:1.3rem">Settings</h1>
+        </div>
+        <div class="card" style="max-width:480px">
+            <div class="card-body">
+                <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:6px;font-size:1rem">🚚 Delivery Fee</h3>
+                <p style="color:var(--slate);font-size:0.85rem;margin-bottom:var(--gap-md)">
+                    Charged on every order. Changing it here updates the fee for all new orders immediately.
+                </p>
+                <label style="font-size:0.8rem;font-weight:600;color:var(--slate)">Delivery fee (RWF)</label>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+                    <input type="number" id="setting-delivery-fee" class="form-input" value="${fee}" min="0" step="100" style="flex:1">
+                    <button class="btn btn-primary" onclick="saveDeliveryFee()">Save</button>
+                </div>
+                <div style="margin-top:10px;font-size:0.82rem;color:var(--slate)">
+                    Current fee: <b style="color:var(--forest)">${formatRWF(fee)}</b>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('page-container').innerHTML = adminShell('settings', content);
+}
+
+async function saveDeliveryFee() {
+    const input = document.getElementById('setting-delivery-fee');
+    const amount = parseInt(input.value, 10);
+    if (!Number.isFinite(amount) || amount < 0) {
+        return showToast('Enter a valid delivery fee', 'error');
+    }
+    try {
+        await Store.setDeliveryFee(amount);
+        showToast('Delivery fee updated to ' + formatRWF(amount));
+        renderAdminSettings();
+    } catch (err) {
+        showToast('Failed to save: ' + err.message, 'error');
+    }
 }
 
 // ═══════════════════════════════════════════
