@@ -21,6 +21,7 @@ const Store = {
         categories: [],
         flyers: [],
         heroPhotos: [],
+        settings: {},
         currentUser: null
     },
 
@@ -36,7 +37,7 @@ const Store = {
         console.log('[Store] Initializing — fetching data from Supabase...');
 
         // Fetch all tables in parallel
-        const [prodRes, ordRes, custRes, drvRes, catRes, flyRes, heroRes] = await Promise.all([
+        const [prodRes, ordRes, custRes, drvRes, catRes, flyRes, heroRes, setRes] = await Promise.all([
             (async () => {
     let all = [], from = 0, size = 1000;
     while (true) {
@@ -53,7 +54,8 @@ const Store = {
             sb.from('drivers').select('*').order('created_at', { ascending: false }),
             sb.from('categories').select('*'),
             sb.from('flyers').select('*').order('sort_order', { ascending: true }),
-            sb.from('hero_photos').select('*').order('sort_order', { ascending: true })
+            sb.from('hero_photos').select('*').order('sort_order', { ascending: true }),
+            sb.from('settings').select('*')
         ]);
 
         this._cache.products   = prodRes.data || [];
@@ -65,6 +67,9 @@ const Store = {
             : DEFAULT_CATEGORIES;
         this._cache.flyers     = flyRes.data || [];
         this._cache.heroPhotos = heroRes.data || [];
+        // Settings: rows of { key, value } → flatten into a map
+        this._cache.settings = {};
+        (setRes.data || []).forEach(row => { this._cache.settings[row.key] = row.value; });
 
         // Restore currentUser from localStorage (survives page refresh)
         try {
@@ -695,6 +700,28 @@ const Store = {
         const { error } = await sb.from('hero_photos').delete().eq('id', id);
         if (error) throw new Error('deleteHeroPhoto failed: ' + error.message);
         this._cache.heroPhotos = this._cache.heroPhotos.filter(p => p.id !== id);
+    },
+
+    // ─── SETTINGS (store-wide, admin-editable) ──
+
+    /** Current delivery fee in RWF (sync, from cache). Defaults to 2000. */
+    getDeliveryFee() {
+        const v = parseInt(this._cache.settings?.delivery_fee, 10);
+        return Number.isFinite(v) ? v : 2000;
+    },
+
+    /**
+     * Update the store-wide delivery fee (admin only).
+     * Upserts the 'delivery_fee' row in the settings table and updates cache.
+     * @param {number} amount - New delivery fee in RWF.
+     */
+    async setDeliveryFee(amount) {
+        const value = String(parseInt(amount, 10));
+        const { error } = await sb.from('settings')
+            .upsert({ key: 'delivery_fee', value }, { onConflict: 'key' });
+        if (error) throw new Error('setDeliveryFee failed: ' + error.message);
+        this._cache.settings.delivery_fee = value;
+        return this.getDeliveryFee();
     },
 
     // ─── REFRESH HELPERS ────────────────────────
