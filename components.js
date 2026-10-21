@@ -1,25 +1,9 @@
-/* ═══════════════════════════════════════════
-   PATEL STORES — Shared UI Components
-   ═══════════════════════════════════════════ */
-
-/**
- * Escape user-supplied text before inserting into innerHTML.
- * Prevents stored XSS (e.g. a customer name containing <script> or <img onerror>).
- * Use for ALL user/product-supplied strings rendered into HTML.
- */
 function esc(s) {
     return String(s ?? '').replace(/[&<>"']/g, m => (
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
     ));
 }
 
-/**
- * Refresh every cart-count badge on screen in place, without a full re-render.
- * The regular nav badge only exists once main-nav is visible (updateNav() hides
- * it on the home route), and the home hero has its own separate cart button/badge
- * baked into renderHome()'s markup — both need to be patched directly here so
- * adding/removing an item is reflected immediately everywhere.
- */
 function updateCartBadges() {
     const count = Store.getTotalCartCount();
 
@@ -114,6 +98,15 @@ function updateNav() {
     const isCustomer = user && user.role === 'customer';
 
     const mainNav = document.getElementById('main-nav');
+
+    // Admin pages carry their own sidebar (brand, nav, user, sign-out),
+    // so hide the global top nav and footer entirely on admin routes.
+    if (isAdmin) {
+        mainNav.style.display = 'none';
+        const footer = document.getElementById('main-footer');
+        if (footer) footer.style.display = 'none';
+        return;
+    }
 
     // On the customer/guest HOME page, hide the top nav entirely —
     // the immersive hero carries the brand, store picker, cart and sign-in.
