@@ -332,12 +332,15 @@ const Store = {
             driver_id: order.driverId || null
         };
 
-        const { data, error } = await sb.from('orders').insert(row).select().single();
+        // Insert WITHOUT returning the row. Guest orders (customer_id = null)
+        // can't be read back under scoped RLS, and RETURNING would fail — so we
+        // build the saved record locally from what we just inserted.
+        const { error } = await sb.from('orders').insert(row);
         if (error) throw new Error('addOrder failed: ' + error.message);
 
-        // Add to front of cache
-        this._cache.orders.unshift(data);
-        return data;
+        const saved = { ...row, created_at: new Date().toISOString() };
+        this._cache.orders.unshift(saved);
+        return saved;
     },
 
     /**
@@ -441,11 +444,11 @@ const Store = {
      * Add a new driver to Supabase and cache.
      */
     async addDriver(driver) {
+        // No password stored here — drivers authenticate via Supabase Auth.
         const row = {
             name: driver.name,
             email: driver.email,
             phone: driver.phone || null,
-            password: driver.password,
             vehicle: driver.vehicle || null
         };
         if (driver.id) row.id = driver.id;
@@ -722,6 +725,34 @@ const Store = {
         if (error) throw new Error('setDeliveryFee failed: ' + error.message);
         this._cache.settings.delivery_fee = value;
         return this.getDeliveryFee();
+    },
+
+    /** Current MoMo Pay code (sync, from cache). Falls back to the built-in default. */
+    getMomoCode() {
+        const v = this._cache.settings?.momo_code;
+        return (v && String(v).trim()) || '400000';
+    },
+
+    /** Current MoMo account name (sync, from cache). */
+    getMomoAccountName() {
+        const v = this._cache.settings?.momo_account_name;
+        return (v && String(v).trim()) || 'Patel Grocery LTD.';
+    },
+
+    /**
+     * Update the MoMo Pay code and/or account name (admin only).
+     * Upserts the settings rows and updates cache.
+     */
+    async setMomoSettings(code, accountName) {
+        const rows = [
+            { key: 'momo_code', value: String(code).trim() },
+            { key: 'momo_account_name', value: String(accountName).trim() }
+        ];
+        const { error } = await sb.from('settings').upsert(rows, { onConflict: 'key' });
+        if (error) throw new Error('setMomoSettings failed: ' + error.message);
+        this._cache.settings.momo_code = rows[0].value;
+        this._cache.settings.momo_account_name = rows[1].value;
+        return true;
     },
 
     // ─── REFRESH HELPERS ────────────────────────
