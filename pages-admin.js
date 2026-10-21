@@ -1,14 +1,5 @@
-/* ═══════════════════════════════════════════
-   PATEL STORES v2 — Admin Pages
-   Mobile-friendly card-based layout
-   ═══════════════════════════════════════════ */
-
-// ═══════════════════════════════════════════
-// NEW ORDER ALERTS (Supabase Realtime)
-// ═══════════════════════════════════════════
 window._newOrderAlerts = window._newOrderAlerts || 0;
 
-/** Fired by Store.subscribeToOrders() whenever an order is inserted. */
 function handleNewOrderAlert(order) {
     window._newOrderAlerts++;
     playAlertSound();
@@ -1205,11 +1196,13 @@ async function deleteHeroPhotoConfirm(id) {
 // ═══════════════════════════════════════════
 function renderAdminSettings() {
     const fee = Store.getDeliveryFee();
+    const momoCode = Store.getMomoCode();
+    const momoName = Store.getMomoAccountName();
     const content = `
         <div class="admin-header">
             <h1 style="font-size:1.3rem">Settings</h1>
         </div>
-        <div class="card" style="max-width:480px">
+        <div class="card" style="max-width:480px;margin-bottom:var(--gap-md)">
             <div class="card-body">
                 <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:6px;font-size:1rem">🚚 Delivery Fee</h3>
                 <p style="color:var(--slate);font-size:0.85rem;margin-bottom:var(--gap-md)">
@@ -1225,8 +1218,38 @@ function renderAdminSettings() {
                 </div>
             </div>
         </div>
+        <div class="card" style="max-width:480px">
+            <div class="card-body">
+                <h3 style="font-family:var(--font-body);font-weight:700;margin-bottom:6px;font-size:1rem">📱 MTN MoMo Payment</h3>
+                <p style="color:var(--slate);font-size:0.85rem;margin-bottom:var(--gap-md)">
+                    Shown to customers at checkout when they pay by MTN Mobile Money.
+                </p>
+                <label style="font-size:0.8rem;font-weight:600;color:var(--slate)">MoMo Pay code</label>
+                <input type="text" id="setting-momo-code" class="form-input" value="${esc(momoCode)}" placeholder="e.g. 400000" style="margin-top:6px;margin-bottom:12px">
+                <label style="font-size:0.8rem;font-weight:600;color:var(--slate)">Account name</label>
+                <input type="text" id="setting-momo-name" class="form-input" value="${esc(momoName)}" placeholder="e.g. Patel Grocery LTD." style="margin-top:6px">
+                <button class="btn btn-primary" style="margin-top:12px" onclick="saveMomoSettings()">Save</button>
+                <div style="margin-top:10px;font-size:0.82rem;color:var(--slate)">
+                    Customers will dial: <b style="color:var(--coffee)">*182*8*1*${esc(momoCode)}#</b>
+                </div>
+            </div>
+        </div>
     `;
     document.getElementById('page-container').innerHTML = adminShell('settings', content);
+}
+
+async function saveMomoSettings() {
+    const code = document.getElementById('setting-momo-code').value.trim();
+    const name = document.getElementById('setting-momo-name').value.trim();
+    if (!code) return showToast('Enter the MoMo Pay code', 'error');
+    if (!name) return showToast('Enter the account name', 'error');
+    try {
+        await Store.setMomoSettings(code, name);
+        showToast('MoMo payment details updated');
+        renderAdminSettings();
+    } catch (err) {
+        showToast('Failed to save: ' + err.message, 'error');
+    }
 }
 
 async function saveDeliveryFee() {
@@ -1332,7 +1355,7 @@ function renderAdminDrivers() {
                         <div class="form-group"><label>Email</label><input type="email" class="form-input" id="new-drv-email" placeholder="driver@patelstores.rw"></div>
                         <div class="form-group"><label>Phone</label><input type="tel" class="form-input" id="new-drv-phone" placeholder="+250 7XX"></div>
                     </div>
-                    <div class="form-group"><label>Password</label><input type="text" class="form-input" id="new-drv-pass" placeholder="Initial password"></div>
+                    <div class="form-group" style="font-size:0.78rem;color:var(--slate)">Create the driver's login in Supabase → Authentication → Users (email + password), then add them here with the same email.</div>
                     <div style="display:flex;gap:6px">
                         <button class="btn btn-primary btn-sm" style="flex:1" onclick="addNewDriver()">Create</button>
                         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('add-driver-form').style.display='none'">Cancel</button>
@@ -1361,9 +1384,8 @@ async function addNewDriver() {
     const name = document.getElementById('new-drv-name').value.trim();
     const email = document.getElementById('new-drv-email').value.trim();
     const phone = document.getElementById('new-drv-phone').value.trim();
-    const password = document.getElementById('new-drv-pass').value;
-    if (!name || !email || !password) return showToast('Fill all fields', 'error');
-    try { await Store.addDriver({ name, email, phone, password }); showToast('"' + name + '" created'); renderAdminDrivers(); }
+    if (!name || !email) return showToast('Fill name and email', 'error');
+    try { await Store.addDriver({ name, email, phone }); showToast('"' + name + '" added'); renderAdminDrivers(); }
     catch (err) { showToast('Failed: ' + err.message, 'error'); }
 }
 
