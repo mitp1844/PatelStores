@@ -1,5 +1,6 @@
 window._newOrderAlerts = window._newOrderAlerts || 0;
 
+/** Fired by Store.subscribeToOrders() whenever an order is inserted. */
 function handleNewOrderAlert(order) {
     window._newOrderAlerts++;
     playAlertSound();
@@ -9,48 +10,85 @@ function handleNewOrderAlert(order) {
     }
 }
 
+// Line icons (feather-style) used across the admin sidebar
+const ADMIN_ICONS = {
+    dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    orders: '<path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>',
+    payments: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+    customers: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/>',
+    drivers: '<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>',
+    products: '<path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/>',
+    categories: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    flyers: '<path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 0 1-5.8-1.6"/>',
+    hero: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+    analytics: '<path d="M3 3v18h18M7 14l3-3 3 3 5-5"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8.9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
+};
+
+function toggleAdminMenu(open) {
+    const side = document.getElementById('admin-side');
+    const scrim = document.getElementById('admin-scrim');
+    if (!side) return;
+    const show = open === undefined ? !side.classList.contains('open') : open;
+    side.classList.toggle('open', show);
+    if (scrim) scrim.style.display = show ? 'block' : 'none';
+}
+
 function adminShell(activeTab, content) {
+    const user = (typeof Store !== 'undefined' && Store.getCurrentUser && Store.getCurrentUser()) || { name: 'Admin' };
+    const initial = (user.name || 'A').charAt(0).toUpperCase();
     const orderBadge = window._newOrderAlerts > 0
-        ? `<span style="background:var(--red);color:#fff;font-size:0.65rem;font-weight:800;padding:1px 6px;border-radius:999px;margin-left:6px">${window._newOrderAlerts}</span>`
-        : '';
+        ? `<span class="admin-nav-ct">${window._newOrderAlerts}</span>` : '';
+
+    const link = (tab, route, label, extra = '') => `
+        <a class="admin-nav ${activeTab===tab?'active':''}" onclick="toggleAdminMenu(false);navigate('${route}')">
+            <svg viewBox="0 0 24 24">${ADMIN_ICONS[tab]||''}</svg>
+            <span>${label}</span>${extra}
+        </a>`;
+
+    const nav = `
+        <div class="admin-nav-grp">
+            <div class="admin-nav-label">Operations</div>
+            ${link('dashboard','admin','Dashboard')}
+            ${link('orders','admin-orders','Orders',orderBadge)}
+            ${link('payments','admin-payments','Payments')}
+            ${link('customers','admin-customers','Customers')}
+            ${link('drivers','admin-drivers','Drivers')}
+        </div>
+        <div class="admin-nav-grp">
+            <div class="admin-nav-label">Catalog</div>
+            ${link('products','admin-products','Products')}
+            ${link('categories','admin-categories','Categories')}
+        </div>
+        <div class="admin-nav-grp">
+            <div class="admin-nav-label">Marketing</div>
+            ${link('flyers','admin-flyers','Flyers')}
+            ${link('hero','admin-hero','Hero Banner')}
+        </div>
+        <div class="admin-nav-grp">
+            <div class="admin-nav-label">System</div>
+            ${link('analytics','admin-analytics','Analytics')}
+            ${link('settings','admin-settings','Settings')}
+        </div>`;
+
     return `
         <div class="admin-layout">
-            <aside class="admin-sidebar">
-                <div class="sidebar-section">
-                    <div class="sidebar-label">Management</div>
-                    <a class="sidebar-link ${activeTab==='dashboard'?'active':''}" onclick="navigate('admin')">
-                        <span class="sidebar-icon">📊</span> Dashboard
-                    </a>
-                    <a class="sidebar-link ${activeTab==='orders'?'active':''}" onclick="navigate('admin-orders')">
-                        <span class="sidebar-icon">📦</span> Orders${orderBadge}
-                    </a>
-                    <a class="sidebar-link ${activeTab==='payments'?'active':''}" onclick="navigate('admin-payments')">
-                        <span class="sidebar-icon">💳</span> Payments
-                    </a>
-                    <a class="sidebar-link ${activeTab==='products'?'active':''}" onclick="navigate('admin-products')">
-                        <span class="sidebar-icon">🏷️</span> Products
-                    </a>
-                    <a class="sidebar-link ${activeTab==='categories'?'active':''}" onclick="navigate('admin-categories')">
-                        <span class="sidebar-icon">📂</span> Categories
-                    </a>
-                    <a class="sidebar-link ${activeTab==='customers'?'active':''}" onclick="navigate('admin-customers')">
-                        <span class="sidebar-icon">👥</span> Customers
-                    </a>
-                    <a class="sidebar-link ${activeTab==='drivers'?'active':''}" onclick="navigate('admin-drivers')">
-                        <span class="sidebar-icon">🚗</span> Drivers
-                    </a>
-                    <a class="sidebar-link ${activeTab==='analytics'?'active':''}" onclick="navigate('admin-analytics')">
-                        <span class="sidebar-icon">📈</span> Analytics
-                    </a>
-                    <a class="sidebar-link ${activeTab==='flyers'?'active':''}" onclick="navigate('admin-flyers')">
-                        <span class="sidebar-icon">📢</span> Flyers
-                    </a>
-                    <a class="sidebar-link ${activeTab==='hero'?'active':''}" onclick="navigate('admin-hero')">
-                        <span class="sidebar-icon">🖼️</span> Hero Banner
-                    </a>
-                    <a class="sidebar-link ${activeTab==='settings'?'active':''}" onclick="navigate('admin-settings')">
-                        <span class="sidebar-icon">⚙️</span> Settings
-                    </a>
+            <div class="admin-mtop">
+                <div class="admin-brand"><div class="admin-logo">P</div><b>Patel Stores</b></div>
+                <button class="admin-burger" onclick="toggleAdminMenu()" aria-label="Menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                </button>
+            </div>
+            <div class="admin-scrim" id="admin-scrim" onclick="toggleAdminMenu(false)"></div>
+            <aside class="admin-sidebar" id="admin-side">
+                <div class="admin-brand admin-brand-top"><div class="admin-logo">P</div><b>Patel Stores</b></div>
+                <nav class="admin-nav-wrap">${nav}</nav>
+                <div class="admin-userfoot">
+                    <div class="admin-av">${esc(initial)}</div>
+                    <div class="admin-uinfo"><div class="nm">${esc(user.name || 'Admin')}</div><div class="rl">Administrator</div></div>
+                    <button class="admin-out" onclick="doLogout()" aria-label="Sign out">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    </button>
                 </div>
             </aside>
             <div class="admin-content">${content}</div>
