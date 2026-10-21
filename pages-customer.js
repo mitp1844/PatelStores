@@ -1,12 +1,3 @@
-const MOMO_CODE = '400000';
-const MOMO_ACCOUNT_NAME = 'Patel Grocery LTD.';
-
-// Delivery fee is mandatory on every order — no free-delivery threshold.
-// The live value is stored in Supabase and set by admins (Store.getDeliveryFee()).
-// This constant is only a fallback if settings haven't loaded yet.
-const DELIVERY_FEE = 2000;
-
-// Fallback hero photo used until the admin uploads their own (Admin → Hero Banner)
 const DEFAULT_HERO_PHOTO = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80';
 
 let _heroSlideTimer = null;
@@ -712,9 +703,9 @@ function renderCheckout(storeId) {
                                 <div style="font-weight:700;margin-bottom:6px;font-size:0.9rem">📱 Send <span style="color:var(--forest)">${formatRWF(total)}</span> to:</div>
                                 <div style="background:white;border-radius:var(--radius-md);padding:12px;border:1px solid var(--cream-dark)">
                                     <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--slate);margin-bottom:3px">MoMo Pay Code</div>
-                                    <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:700;color:var(--coffee);letter-spacing:3px">${MOMO_CODE}</div>
-                                    <div style="font-size:0.85rem;font-weight:600;color:var(--coffee);margin-top:2px">${MOMO_ACCOUNT_NAME}</div>
-                                    <div style="font-size:0.78rem;color:var(--slate);margin-top:2px">Dial: <b>*182*8*1*${MOMO_CODE}#</b></div>
+                                    <div style="font-family:var(--font-mono);font-size:1.8rem;font-weight:700;color:var(--coffee);letter-spacing:3px">${Store.getMomoCode()}</div>
+                                    <div style="font-size:0.85rem;font-weight:600;color:var(--coffee);margin-top:2px">${Store.getMomoAccountName()}</div>
+                                    <div style="font-size:0.78rem;color:var(--slate);margin-top:2px">Dial: <b>*182*8*1*${Store.getMomoCode()}#</b></div>
                                 </div>
                                 <div style="font-size:0.75rem;color:var(--light-slate);margin-top:8px">After sending, upload a screenshot below.</div>
                             </div>
